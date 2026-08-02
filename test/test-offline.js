@@ -76,13 +76,14 @@ return sandbox.__T.resolveCatalog(sandbox.__T.CATALOG, () => {}).then(res => {
   ok('injected script tags cleaned up', cleanupSeen > 0, cleanupSeen);
 
   // catalog must remain fully playable via the synth so the UI is explorable
-  ok('full catalog stays playable offline', sandbox.__T.CATALOG.length === 18);
-  ok('every song still has an identity offline',
-     sandbox.__T.CATALOG.every((s, i) => s.uid === i));
+  const catalog = sandbox.__T.CATALOG;
+  ok('full catalog stays playable offline', catalog.length >= 18, catalog.length);
+  ok('every song still has an identity offline', catalog.every((s, i) => s.uid === i));
 
   // every song still yields a valid Apple Music attribution link from trackId
   const links = sandbox.BOLLYWOOD_SONGS.map(s => 'https://music.apple.com/in/song/' + s.trackId);
-  ok('attribution link derivable for all 18 offline', links.every(l => /\/song\/\d+$/.test(l)));
+  ok('attribution link derivable for all ' + links.length + ' offline',
+     links.every(l => /\/song\/\d+$/.test(l)));
 
   console.log('\n================  ' + pass + ' passed, ' + fail + ' failed  ================\n');
   process.exit(fail ? 1 : 0);

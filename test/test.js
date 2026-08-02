@@ -93,11 +93,20 @@ function ok(name, cond, extra) {
   else { fail++; console.log('  FAIL  ' + name + (extra ? '  -> ' + extra : '')); }
 }
 
-console.log('\n--- catalog ---');
-ok('18 songs', SONGS.length === 18, SONGS.length);
+console.log('\n--- catalog (' + SONGS.length + ' songs) ---');
+ok('catalog is populated', SONGS.length >= 18, SONGS.length);
 ok('every song has title/artist/movie', SONGS.every(s => s.title && s.artist && s.movie));
-ok('titles unique', new Set(SONGS.map(s => s.title)).size === SONGS.length);
-ok('every seed song pinned to a trackId', SONGS.every(s => typeof s.trackId === 'number'));
+ok('every song pinned to a trackId', SONGS.every(s => typeof s.trackId === 'number'));
+
+// Titles are NOT required to be unique - Hindi film music reuses them, and the
+// game handles that by identity. A repeated *recording* is a harvester bug.
+const ids = SONGS.map(s => s.trackId);
+ok('no trackId appears twice', new Set(ids).size === ids.length,
+   ids.filter((v, i) => ids.indexOf(v) !== i).join(','));
+const pairs = CATALOG.map(s => s.nTitle + '|' + s.nMovie);
+ok('no title+film pair appears twice', new Set(pairs).size === pairs.length,
+   pairs.filter((v, i) => pairs.indexOf(v) !== i).slice(0, 5).join(' / '));
+ok('no song is credited to nobody', SONGS.every(s => s.artist.trim().length > 1));
 
 console.log('\n--- identity (nothing may key off a title) ---');
 ok('catalog gets a uid per song', CATALOG.length === SONGS.length &&
@@ -105,7 +114,16 @@ ok('catalog gets a uid per song', CATALOG.length === SONGS.length &&
 ok('uids are unique', new Set(CATALOG.map(s => s.uid)).size === CATALOG.length);
 ok('normalised forms precomputed', CATALOG.every(s => s.nTitle === T.norm(s.title) &&
    s.nMovie === T.norm(s.movie)));
-ok('seed songs carry no ambiguous title', Object.keys(T.ambiguousTitles(CATALOG)).length === 0);
+
+// Colliding titles are expected at catalog scale and must be survivable, not
+// absent: each one has to resolve to distinct songs from distinct films.
+const ambiguous = Object.keys(T.ambiguousTitles(CATALOG));
+console.log('    (' + ambiguous.length + ' titles shared across films' +
+            (ambiguous.length ? ': ' + ambiguous.slice(0, 6).join(', ') : '') + ')');
+ok('every shared title spans distinct films', ambiguous.every(t => {
+  const films = CATALOG.filter(s => s.nTitle === t).map(s => s.nMovie);
+  return new Set(films).size === films.length;
+}));
 
 // The failure this whole scheme exists to prevent: one title, two films.
 const collide = T.buildCatalog([
@@ -174,15 +192,21 @@ ok('final attempt unlocks the full 16s', T.STEPS[5] === 16 && unlockAt(5) === 1)
 console.log('\n--- live iTunes resolution via JSONP ---');
 T.resolveCatalog(CATALOG, () => {}).then(res => {
   const keys = Object.keys(res.tracks);
+  const batches = Math.ceil(CATALOG.length / 200);
   ok('not flagged offline', res.offline === false);
-  ok('all 18 resolved', keys.length === 18, keys.length);
+  // The gate: every pinned id in the shipped catalog still resolves to a real
+  // preview. A harvested id that Apple has since pulled fails right here.
+  ok('all ' + CATALOG.length + ' resolved', keys.length === CATALOG.length,
+     keys.length + ' of ' + CATALOG.length + ' — missing: ' +
+     CATALOG.filter(s => !res.tracks[s.uid]).map(s => s.title).slice(0, 8).join(', '));
   // The bug this guards: keying the preview cache by title. Every key must be a
   // uid, so the lookups in the app (tracks[song.uid]) actually hit.
   ok('cache keyed by uid, not title',
      keys.every(k => CATALOG.some(s => String(s.uid) === k)), keys.slice(0, 3).join(','));
   ok('every catalog song has a cache entry',
      CATALOG.every(s => res.tracks[s.uid]));
-  ok('single batched lookup request', jsonpCalls.length === 1, jsonpCalls.length + ' calls');
+  ok('resolved in ' + batches + ' batched lookup request(s), 200 ids each',
+     jsonpCalls.length === batches, jsonpCalls.length + ' calls');
   ok('callback param appended (JSONP)', jsonpCalls[0].includes('callback=__itunes_cb_'));
 
   const missingPrev = keys.filter(k => !res.tracks[k].previewUrl);

@@ -26,3 +26,7 @@ mobile-*.html
 
 # commit message scratch
 .commitmsg
+
+# raw iTunes responses cached by build/harvest.js so a re-run to change only
+# the selection rules costs nothing. Derived data; regenerate, never commit.
+build/.harvest-cache/

@@ -46,14 +46,79 @@ plain term search regularly returns the wrong recording:
   a completely different song (*Ik Junoon (Paint It Red)*).
 - Soundtracks are full of `(Encore)`, `(Reprise)`, Bhojpuri versions and mashups.
 
-Every one of the 18 seed songs was resolved and verified by hand. Songs added
-without a `trackId` fall back to a scored search that penalises
-remix/unplugged/cover/karaoke and rewards `Original Motion Picture Soundtrack` —
-usually right, not guaranteed. Find an id with:
+The 18 seed songs were resolved and verified by hand. Songs added without a
+`trackId` fall back to a scored search that penalises remix/unplugged/cover/
+karaoke and rewards `Original Motion Picture Soundtrack` — usually right, not
+guaranteed. Find an id with:
 
 ```
 https://itunes.apple.com/search?term=YOUR+SONG&entity=song&country=IN
 ```
+
+For adding songs by the hundred rather than one at a time, see below.
+
+## Harvesting the catalog
+
+`build/harvest.js` rewrites the catalog array from the iTunes API. It is run by
+hand, never as part of a build — it takes half an hour and hits Apple a few
+hundred times.
+
+```
+node build/harvest.js               harvest, then rewrite the catalog
+node build/harvest.js --dry         harvest and report, write nothing
+node build/harvest.js --target 300  how many songs to keep
+node build/harvest.js --composers 4 stop after N composers (a smoke run)
+```
+
+Bollywood ships in soundtrack albums, so the catalog scales by harvesting
+**films, not songs**. Seeded with two dozen music directors spanning the 60s to
+now: composer → `artistId` → up to 200 albums → expand each. Roughly one
+request per film, ~8–10 songs per film.
+
+**An album's own tracks say what kind of album it is.** A compilation labels
+every track with where it came from — `Tere Bina (From "Guru")` — and a
+soundtrack has no need to. So albums are classified after expansion rather than
+by name, and a compilation's songs become popularity *signal* instead of
+catalog candidates.
+
+Popularity matters because the harvest finds ~2,700 songs and the game ships
+300, so *something* has to choose — and 300 uniformly obscure songs is a
+vocabulary test, not a game. What ranks them is **position**: where a song sits
+on its soundtrack, and where that soundtrack sits in Apple's ordering of the
+composer's albums. A soundtrack opens with the song the film is selling, and
+Apple lists a composer's big films first. An appearance on the composer's own
+best-of is a smaller bonus on top.
+
+Both caps that follow — 3 songs per film, 18 per composer — exist to stop two
+prolific composers eating the catalog and skewing it modern.
+
+### What didn't work
+
+Two better-sounding theories were measured here and both lost.
+
+**Counting *Various Artists* "Bollywood Hits" compilation appearances**, on the
+theory that hits get repackaged endlessly and deep cuts never do. What Apple's
+India store returns for those searches is party/workout sets and small-label
+re-recordings (`Bollywood Hits (Versi Melayu)`, `Best Of Bollywood LO-FI`, and
+one jazz album). Of 310 harvested candidates, exactly **3** matched — none of
+them *Tum Hi Ho*, *Kabira* or *Channa Mereya*.
+
+**Ranking by a dedicated single release** (`Kesariya (From "Brahmastra") -
+Single`), on the theory that labels only cut singles for songs they are pushing.
+This was the heaviest term in the score until it was measured against a canon
+list, and it is not merely weak — it is *anti-correlated*. Only 124 of 2,703
+candidates carry a single, and they are the modern promotional drip where a
+label cuts one per track: 31% of Sachin-Jigar's songs and 14% of Tanishk
+Bagchi's, against 0% for Jatin-Lalit, Laxmikant-Pyarelal and Shankar Jaikishan.
+Not one of *Tum Hi Ho*, *Kabira*, *Channa Mereya*, *Gerua*, *Badtameez Dil* or
+*Deewani Mastani* has one. It was measuring release era, not fame, which is
+fatal for a catalog spanning the 1950s to now — weighting it heaviest bought
+*Chingam Chabake* and *Illegal Weapon 2.0* at the cost of the canon (27% recall
+against 44% for position). The signal is still harvested, because the album list
+names singles for free, but it no longer scores.
+
+The pattern in both: a signal has to be comparable *across* composers and eras
+to order a catalog that spans them. Position is; release packaging isn't.
 
 ## Build and test
 
@@ -123,27 +188,22 @@ the same name**. When a title is ambiguous the typeahead refuses a hand-typed
 answer and makes you pick a row (every row shows its film), and the guess row
 then reads `Tere Bina · Bombay` so a wrong answer cannot be mistaken for a win.
 
-## Known issues
-
-**The catalog is 18 songs.** The app is ready for hundreds — titles are baked in
-and need no network, and audio resolves per round — but the songs themselves
-still have to be harvested and curated. See *Scaling notes*.
-
 ## Scaling notes
 
-Bollywood songs ship in film soundtrack albums, so the catalog scales by
-**harvesting films, not songs**: `lookup?id=<collectionId>&entity=song` returns a
-complete OST in one request (measured: 9 tracks for *Yeh Jawaani Hai Deewani*),
-and `/lookup` accepts **200 ids per batch** (measured). That's ~2 requests per
-film, ~8–10 songs per film — roughly 700 requests for 3,000 songs, a ~35 minute
-one-off build script at Apple's ~20 req/min soft limit.
+Measured limits, for anyone pushing this further:
 
-The hard part is curation, not collection: dedup on normalised title + primary
-artist, filter variants and sub-60s tracks, and derive a popularity score by
-counting how many distinct compilation albums a song appears on (hits get
-re-packaged endlessly, deep cuts never do). Popularity then becomes the
-difficulty dial — tiers, eras, or music-director filters — because 3,000
-uniformly obscure songs is a vocabulary test, not a game.
+- `lookup?id=<collectionId>&entity=song` returns a complete OST in **one**
+  request (9 tracks for *Yeh Jawaani Hai Deewani*).
+- `lookup?id=<artistId>&entity=album` returns up to **200** albums in one.
+- `/lookup` accepts **200 ids per batch** — so verifying a 300-song catalog
+  against the live API costs two requests, which is why `test.js` can afford to
+  do it on every run.
+- Apple's soft rate limit is ~20 requests/minute; past it you get a `403` and
+  the harvester backs off for a minute.
+
+Beyond a few thousand songs the remaining lever is difficulty: the popularity
+score the harvester already computes is the natural dial for tiers, eras, or
+music-director filters.
 
 ## Layout
 
@@ -152,6 +212,7 @@ bollywood-heardle.html   built, playable — this is the deliverable
 src/template.html        source; song catalog at the top, app JS at the bottom
 vendor/                  React 18.3.1 UMD + Anton woff2 (base64), inlined at build
 build/build.ps1          assembly + self-containment checks
+build/harvest.js         rebuilds the song catalog from the iTunes API
 test/                    node test suites
 ```
 
