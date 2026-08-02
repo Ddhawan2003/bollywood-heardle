@@ -19,7 +19,9 @@ $ErrorActionPreference = 'Stop'
 $root     = Split-Path -Parent $PSScriptRoot
 $template = Join-Path $root 'src\template.html'
 $vendor   = Join-Path $root 'vendor'
-$output   = Join-Path $root 'bollywood-heardle.html'
+# index.html, so that a static host serves the game at the bare URL and a push
+# is a deploy. Double-clicking it locally still works exactly the same.
+$output   = Join-Path $root 'index.html'
 
 foreach ($f in @($template,
                  (Join-Path $vendor 'react.min.js'),
@@ -71,7 +73,41 @@ if ($closings -ne $blocks) {
 }
 Write-Host "scripts  : $blocks blocks, balanced"
 
-# No UTF-8 BOM: it would be emitted before <title> and show up as stray glyphs.
+# src/template.html is a FRAGMENT on purpose: published as a Claude Artifact it
+# is wrapped in a document by the platform, so carrying its own <head> would
+# nest one document inside another. A file served over HTTP has no such wrapper,
+# and without it there is no viewport meta - which is not cosmetic. Mobile
+# Safari assumes a 980px canvas for pages that do not declare one and scales the
+# result down, so the template's own `@media (max-width: 420px)` rules never
+# match and the phone gets a shrunken desktop layout. The skeleton is therefore
+# added here, at the point where the standalone file is produced.
+$title = 'Filmi — Guess the Bollywood Song'
+$m = [regex]::Match($html, '(?s)<title>(.*?)</title>\s*')
+if ($m.Success) {
+    $title = $m.Groups[1].Value.Trim()
+    $html  = $html.Remove($m.Index, $m.Length)   # re-emitted inside <head>
+}
+
+$head = @"
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="description" content="Guess the Hindi film song from a half-second clip.">
+<!-- Added to the home screen on iOS this runs chromeless, like an app. -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Filmi">
+<title>$title</title>
+</head>
+<body>
+"@
+
+$html = $head + $html + "`n</body>`n</html>`n"
+
+# No UTF-8 BOM: it would be emitted before the doctype and show up as stray glyphs.
 [IO.File]::WriteAllText($output, $html, (New-Object Text.UTF8Encoding $false))
 
 $kb    = [Math]::Round((Get-Item $output).Length / 1KB, 1)

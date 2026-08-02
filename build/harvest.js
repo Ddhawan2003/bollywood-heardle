@@ -69,15 +69,44 @@ const COMPOSERS = [
   'Sachin-Jigar', 'Mithoon', 'Tanishk Bagchi', 'Himesh Reshammiya', 'Salim-Sulaiman',
   'Ismail Darbar', 'Sanjay Leela Bhansali', 'Jeet Gannguli', 'Rajesh Roshan',
   'Kalyanji-Anandji', 'Shankar Jaikishan', 'Bappi Lahiri', 'Ankit Tiwari', 'Sajid-Wajid',
+  // The 2020s are their own era and the names above barely work in it. Without
+  // these the catalog stops around 2019: Jawan and Animal have no composer on
+  // the list at all.
+  'Anirudh Ravichander', 'Sachet-Parampara', 'Vishal Mishra', 'Amaal Mallik',
 ];
 
 const CONFIG = {
-  albumsPerComposer: 20,   // in Apple's own order, which puts the big films first
+  // Apple's ordering puts a composer's big films first, so this is a relevance
+  // cutoff as much as a budget. It was 20, which stopped dead at 2019 for the
+  // prolific moderns - Pritam's Brahmastra is his album #25, Animal #28, Bhool
+  // Bhulaiyaa 2 #29, Dunki #36. Every one of those is past a cutoff of 20, so
+  // no amount of rescoring could reach them; they were never fetched.
+  albumsPerComposer: 60,
   songsPerFilm: 3,         // no single soundtrack may dominate
-  songsPerComposer: 18,    // nor may one composer - this is what keeps the eras mixed
-  target: 300,
+  songsPerComposer: 20,    // nor may one composer - applied per era, not overall
   delayMs: 3200,           // ~19 requests/minute, under Apple's soft limit
 };
+
+// The catalog is filled era by era rather than as one global ranking, because a
+// global one is always won by whichever era has the most releases on Apple: the
+// 2010s took 160 of 300 while the 2020s got 10. Position ranks songs honestly
+// WITHIN an era; it says nothing about how many slots an era deserves, so the
+// quotas are set here rather than hoped for.
+//
+// The spans are deliberately unequal and it shows in the result. "pre-2000"
+// skims the best of six decades; the 2020s quota is drawn from about six years,
+// so it reaches much further down its own ranking. Expect the recent bucket to
+// be the obscure one, and expect it to be the one that falls short.
+const ERAS = [
+  { name: '2020s',    from: 2020, to: 9999, quota: 300 },
+  { name: '2010s',    from: 2010, to: 2019, quota: 300 },
+  { name: '2000s',    from: 2000, to: 2009, quota: 300 },
+  { name: 'pre-2000', from: 1,    to: 1999, quota: 300 },
+  // Apple gave no usable date. Kept, but not allowed to crowd out a real era.
+  { name: 'undated',  from: 0,    to: 0,    quota: 40  },
+];
+
+CONFIG.target = ERAS.reduce((n, e) => n + e.quota, 0);
 
 const argv = process.argv.slice(2);
 const flag = (name, fallback) => {
@@ -257,13 +286,21 @@ async function albumsFor(artistId) {
 
   // Everything album-shaped gets expanded; what it turns out to be is decided
   // from its tracks afterwards.
-  const albums = all
+  const films = all
     .filter(r => r.trackCount >= 4)
-    .filter(r => !COMPILATION_NAME.test(r.collectionName))
-    .slice(0, CONFIG.albumsPerComposer);
+    .filter(r => !COMPILATION_NAME.test(r.collectionName));
 
-  return { singles, albums, bestOf: all.filter(r => r.trackCount >= 8 &&
-                                                    COMPILATION_NAME.test(r.collectionName)) };
+  // albumTotal is the length BEFORE the cutoff, because rank is scored as a
+  // percentile of the composer's whole catalog rather than an absolute
+  // position. Pritam's 25th album of 77 is top-third; Ismail Darbar's 12th of
+  // 13 is the bottom. An absolute rank calls them both "past 20" and is wrong
+  // about at least one of them.
+  return {
+    singles,
+    albums: films.slice(0, CONFIG.albumsPerComposer),
+    albumTotal: films.length,
+    bestOf: all.filter(r => r.trackCount >= 8 && COMPILATION_NAME.test(r.collectionName)),
+  };
 }
 
 // A compilation labels every track with the film it came from; a soundtrack has
@@ -276,7 +313,7 @@ function looksLikeCompilation(tracks) {
   return marked / songs.length >= 0.5;
 }
 
-function candidatesFrom(tracks, composer, albumName, rank) {
+function candidatesFrom(tracks, composer, albumName, rank, albumTotal) {
   const out = [];
 
   // Soundtracks carry alternate cuts beside the original - Tera Deedar Hua and
@@ -315,6 +352,8 @@ function candidatesFrom(tracks, composer, albumName, rank) {
       nMovie: norm(movie),
       trackNumber: t.trackNumber || 99,
       albumRank: rank,
+      // 0 for the composer's most prominent film, 1 for their least.
+      albumPct: albumTotal > 1 ? rank / (albumTotal - 1) : 0,
       // Apple's date is the release of THIS pressing, so a reissued 1975 song
       // can carry a 2015 date. Good enough to see the shape of the catalog,
       // not good enough to key anything off.
@@ -345,7 +384,7 @@ async function harvest() {
     const id = await artistIdFor(composer);
     if (!id) { console.log('  ' + composer.padEnd(24) + ' no artistId, skipped'); continue; }
 
-    const { singles: sing, albums, bestOf: comps } = await albumsFor(id);
+    const { singles: sing, albums, albumTotal, bestOf: comps } = await albumsFor(id);
     sing.forEach(s => singles.add(signalKey(s.title, s.film)));
 
     let films = 0, songs = 0, comped = 0;
@@ -353,7 +392,7 @@ async function harvest() {
       const res = await lookup(albums[i].collectionId, 'song', 200);
       const tracks = res.results || [];
       if (looksLikeCompilation(tracks)) { noteBestOf(tracks); comped++; continue; }
-      const found = candidatesFrom(tracks, composer, albums[i].collectionName, i);
+      const found = candidatesFrom(tracks, composer, albums[i].collectionName, i, albumTotal);
       candidates.push(...found);
       films++; songs += found.length;
     }
@@ -410,7 +449,27 @@ function jitter(trackId) {
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 }
 
+// Apple's date is the release of THIS pressing, so a 1975 song on a 2015
+// reissue reads 2015. Across a whole crawl the same film usually turns up in
+// several pressings, and the earliest of them is the closest thing to the
+// film's own year that these responses contain. It is still only a floor - a
+// film whose every pressing is a reissue stays late - but it is what stops
+// reissued classics from being counted as new releases.
+function datePerFilm(candidates) {
+  const earliest = new Map();
+  for (const c of candidates) {
+    if (!c.year) continue;
+    const seen = earliest.get(c.nMovie);
+    if (!seen || c.year < seen) earliest.set(c.nMovie, c.year);
+  }
+  for (const c of candidates) c.year = earliest.get(c.nMovie) || c.year;
+}
+
+const decadeOf = s => (s.year ? Math.floor(s.year / 10) * 10 : 0);
+
 function select(candidates, signals) {
+  datePerFilm(candidates);
+
   // One entry per song. Reissues and deluxe editions carry the same recording
   // under different trackIds; the earliest album wins, which is the original.
   const byIdentity = new Map();
@@ -443,28 +502,43 @@ function select(candidates, signals) {
       // single useless across a catalog spanning the 1950s to now. Ordering by
       // them lifts recall to 44%, which is about the ceiling: songsPerFilm caps
       // Yeh Jawaani Hai Deewani at 3 and it has four canon songs.
+      //
+      // Album position is scored as a PERCENTILE of the composer's catalog, not
+      // an absolute index. An absolute one has a cliff at albumsPerComposer, and
+      // everything past it scores identically - which meant that widening the
+      // crawl to reach Brahmastra harvested it and then ranked it last.
       pop,
-      // Doubled through to keep every score an integer.
-      score: pop.bestOf * 8 +
-             (20 - Math.min(c.albumRank, 20)) * 3 +
-             (12 - Math.min(c.trackNumber, 12)) * 4,
+      score: Math.round(pop.bestOf * 8 +
+                        (1 - c.albumPct) * 60 +
+                        (12 - Math.min(c.trackNumber, 12)) * 4),
     });
   });
 
   scored.sort((a, b) => b.score - a.score || jitter(a.trackId) - jitter(b.trackId));
 
+  // Each era draws from the same ranking but fills its own quota, so a prolific
+  // era cannot spend another's slots. songsPerFilm is global - three Yeh Jawaani
+  // Hai Deewani songs is three whatever era is asking - while songsPerComposer
+  // is per era, so Pritam can appear across four of them without owning any one.
   const perFilm = new Map();
-  const perComposer = new Map();
   const chosen = [];
-  for (const s of scored) {
-    if (chosen.length >= CONFIG.target) break;
-    const f = perFilm.get(s.nMovie) || 0;
-    if (f >= CONFIG.songsPerFilm) continue;
-    const c = perComposer.get(s.composer) || 0;
-    if (c >= CONFIG.songsPerComposer) continue;
-    perFilm.set(s.nMovie, f + 1);
-    perComposer.set(s.composer, c + 1);
-    chosen.push(s);
+  for (const era of ERAS) {
+    const perComposer = new Map();
+    let taken = 0;
+    for (const s of scored) {
+      if (taken >= era.quota) break;
+      if (s.year < era.from || s.year > era.to) continue;
+      const f = perFilm.get(s.nMovie) || 0;
+      if (f >= CONFIG.songsPerFilm) continue;
+      const c = perComposer.get(s.composer) || 0;
+      if (c >= CONFIG.songsPerComposer) continue;
+      perFilm.set(s.nMovie, f + 1);
+      perComposer.set(s.composer, c + 1);
+      s.era = era.name;
+      chosen.push(s);
+      taken++;
+    }
+    era.filled = taken;
   }
   return chosen;
 }
@@ -553,14 +627,21 @@ function write(seeds, harvested) {
   console.log('  ' + new Set(merged.map(s => s.nMovie)).size + ' distinct films');
   console.log('  ' + requests + ' requests this run');
 
-  console.log('\n  top 20:');
-  chosen.slice(0, 20).forEach(s =>
-    console.log('    ' + String(s.score).padStart(3) + '  ' +
-                (s.pop.single ? 'S' : ' ') + (s.pop.bestOf ? 'B' : ' ') + '  ' +
-                s.title + ' — ' + s.movie));
-  console.log('\n  bottom 8 of the cut:');
-  chosen.slice(-8).forEach(s =>
-    console.log('    ' + String(s.score).padStart(3) + '      ' + s.title + ' — ' + s.movie));
+  console.log('\n  era quotas (short means the pool ran out, not that it was capped):');
+  ERAS.forEach(e => console.log('    ' + e.name.padEnd(10) +
+    String(e.filled).padStart(4) + ' / ' + String(e.quota).padEnd(5) +
+    (e.filled < e.quota ? ' SHORT by ' + (e.quota - e.filled) : '') ));
+
+  ERAS.filter(e => e.filled).forEach(e => {
+    const inEra = chosen.filter(s => s.era === e.name);
+    console.log('\n  ' + e.name + ' — best 8 and worst 4 of ' + inEra.length + ':');
+    inEra.slice(0, 8).forEach(s =>
+      console.log('    ' + String(s.score).padStart(3) + '  ' + String(s.year) + '  ' +
+                  s.title + ' — ' + s.movie));
+    if (inEra.length > 12) inEra.slice(-4).forEach(s =>
+      console.log('    ' + String(s.score).padStart(3) + '  ' + String(s.year) + '  ' +
+                  s.title + ' — ' + s.movie));
+  });
 
   const bucket = (list, keyOf) => {
     const m = new Map();
@@ -568,10 +649,10 @@ function write(seeds, harvested) {
     return [...m.entries()].sort((a, b) => String(a[0]).localeCompare(String(b[0])));
   };
 
-  console.log('\n  by decade (Apple pressing dates, so reissues read late):');
+  console.log('\n  by decade (earliest pressing seen, so classics can still read late):');
   bucket(chosen, s => (s.year ? Math.floor(s.year / 10) * 10 + 's' : 'unknown'))
     .forEach(([d, n]) => console.log('    ' + String(d).padEnd(9) +
-      String(n).padStart(3) + '  ' + '#'.repeat(Math.round(n / 3))));
+      String(n).padStart(4) + '  ' + '#'.repeat(Math.round(n / 8))));
 
   console.log('\n  by composer:');
   bucket(chosen, s => s.composer).sort((a, b) => b[1] - a[1])

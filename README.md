@@ -10,12 +10,24 @@ Audio comes from the free **iTunes Search API** — no key, no auth, no backend.
 
 ## Play it
 
-Open `bollywood-heardle.html` in any browser. That's the whole install — one
-self-contained file, no build step, no server.
+Open `index.html` in any browser. That's the whole install — one self-contained
+file, no build step, no server.
 
 It needs an internet connection to reach Apple for previews. With no network it
 falls back to synthesised stand-in audio so the interface is still explorable,
 and says so plainly on every screen.
+
+### On a phone
+
+There is nothing to install, but the file has to be reachable *as a URL* — iOS
+sandboxes local HTML, so mailing yourself the file does not work. Either serve
+the folder over the local network (`npx serve .`, then browse to the machine's
+LAN address) or put it on any static host.
+
+The build names its output `index.html` precisely so that a static host serves
+the game at the bare URL with no configuration. On GitHub Pages, pointing at the
+repository root is the entire setup and a push is a deploy. Added to the iOS
+home screen it runs chromeless, like an app.
 
 ## Why one file with everything inlined
 
@@ -60,20 +72,28 @@ For adding songs by the hundred rather than one at a time, see below.
 ## Harvesting the catalog
 
 `build/harvest.js` rewrites the catalog array from the iTunes API. It is run by
-hand, never as part of a build — it takes half an hour and hits Apple a few
-hundred times.
+hand, never as part of a build — a cold run takes about an hour and hits Apple
+roughly 1,300 times. Every response is cached under `build/.harvest-cache`
+(gitignored), so a re-run to change only the selection rules costs nothing and
+an interrupted crawl resumes where it stopped.
 
 ```
 node build/harvest.js               harvest, then rewrite the catalog
 node build/harvest.js --dry         harvest and report, write nothing
-node build/harvest.js --target 300  how many songs to keep
 node build/harvest.js --composers 4 stop after N composers (a smoke run)
 ```
 
 Bollywood ships in soundtrack albums, so the catalog scales by harvesting
-**films, not songs**. Seeded with two dozen music directors spanning the 60s to
-now: composer → `artistId` → up to 200 albums → expand each. Roughly one
-request per film, ~8–10 songs per film.
+**films, not songs**. Seeded with 28 music directors spanning the 1940s to now:
+composer → `artistId` → up to 60 albums → expand each. Roughly one request per
+film, ~8–10 songs per film, which yields about 7,600 candidates.
+
+That album ceiling is a relevance cutoff, not just a budget, and it was set too
+low at first. Apple orders a composer's albums big-film-first, but for the
+prolific moderns the 2020s sit further down than that suggests: Pritam's
+*Brahmastra* is his album #25, *Animal* #28, *Bhool Bhulaiyaa 2* #29, *Dunki*
+#36. A cutoff of 20 stopped the catalog dead at 2019 — and no amount of
+rescoring could have recovered those films, because they were never fetched.
 
 **An album's own tracks say what kind of album it is.** A compilation labels
 every track with where it came from — `Tere Bina (From "Guru")` — and a
@@ -81,16 +101,48 @@ soundtrack has no need to. So albums are classified after expansion rather than
 by name, and a compilation's songs become popularity *signal* instead of
 catalog candidates.
 
-Popularity matters because the harvest finds ~2,700 songs and the game ships
-300, so *something* has to choose — and 300 uniformly obscure songs is a
-vocabulary test, not a game. What ranks them is **position**: where a song sits
-on its soundtrack, and where that soundtrack sits in Apple's ordering of the
-composer's albums. A soundtrack opens with the song the film is selling, and
+Popularity matters because the harvest finds ~7,600 songs and the game ships
+~1,200, so *something* has to choose — and a catalog of uniformly obscure songs
+is a vocabulary test, not a game. What ranks them is **position**: where a song
+sits on its soundtrack, and where that soundtrack sits in Apple's ordering of
+the composer's albums. A soundtrack opens with the song the film is selling, and
 Apple lists a composer's big films first. An appearance on the composer's own
 best-of is a smaller bonus on top.
 
-Both caps that follow — 3 songs per film, 18 per composer — exist to stop two
-prolific composers eating the catalog and skewing it modern.
+Album position is scored as a **percentile of the composer's catalog**, not an
+absolute index. An absolute one has a cliff at the album ceiling, so everything
+past it scores identically — which meant widening the crawl to reach
+*Brahmastra* fetched it and then ranked it last. As a percentile, Pritam's 25th
+album of 77 reads as top-third while Ismail Darbar's 12th of 13 correctly reads
+as the bottom.
+
+### Filling the catalog era by era
+
+The catalog is filled **per era against a quota**, not as one global ranking,
+because a global one is always won by whichever era has the most releases on
+Apple. Ranked globally the 2010s took 160 of 300 slots and the 2020s got 10.
+Position ranks songs honestly *within* an era; it says nothing about how many
+slots an era deserves, so the quotas are set explicitly:
+
+```
+2020s      293 / 300      2000s      300 / 300
+2010s      300 / 300      pre-2000   264 / 300
+```
+
+The spans are deliberately unequal and it shows. `pre-2000` skims the best of
+six decades, while the 2020s quota is drawn from about six years and so reaches
+much further down its own ranking — the recent bucket is the obscure one. Both
+short-falls are the pool running out, not a cap biting.
+
+Alongside the quotas: 3 songs per film globally, and 20 per composer *per era*,
+so a prolific composer can appear across all four without owning any one.
+
+Era needs a year, and Apple's per-track date is the date of **that pressing** —
+a 1975 song on a 2015 reissue reads as 2015. Across a whole crawl the same film
+usually appears in several pressings, so the earliest one seen is used as the
+film's year. That is still only a floor, and a film whose every pressing is a
+reissue stays late; it is what stops reissued classics from being counted as new
+releases.
 
 ### What didn't work
 
@@ -123,15 +175,15 @@ to order a catalog that spans them. Position is; release packaging isn't.
 ## Build and test
 
 ```powershell
-pwsh build/build.ps1           # src/template.html -> bollywood-heardle.html
+pwsh build/build.ps1           # src/template.html -> index.html
 pwsh build/build.ps1 -Verify   # build, then run both suites
 ```
 
 ```
-test/test.js           53 checks — rules, normalisation, song identity, variant
+test/test.js           55 checks — rules, normalisation, song identity, variant
                        scoring, simulated games, and LIVE iTunes resolution over
-                       JSONP: the whole catalog batched, and single songs by the
-                       runtime path
+                       JSONP: the whole catalog batched (1,164 ids in 6 requests)
+                       and single songs by the runtime path
 test/test-offline.js   12 checks — simulates a CSP refusal; asserts both
                        resolution paths degrade in under 2s instead of hanging
 test/test-ui.js        47 checks — drives the real App component through whole
@@ -208,7 +260,7 @@ music-director filters.
 ## Layout
 
 ```
-bollywood-heardle.html   built, playable — this is the deliverable
+index.html               built, playable — this is the deliverable
 src/template.html        source; song catalog at the top, app JS at the bottom
 vendor/                  React 18.3.1 UMD + Anton woff2 (base64), inlined at build
 build/build.ps1          assembly + self-containment checks
