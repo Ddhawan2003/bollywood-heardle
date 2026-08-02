@@ -1672,6 +1672,26 @@ button:disabled { cursor: not-allowed; }
 .actions .btn { flex: 1; }
 .actions .btn-submit { flex: 1.4; }
 
+/* Deliberately not a .btn: giving up should be reachable in one tap but never
+   compete with Submit for the eye. */
+.btn-giveup {
+  display: block;
+  width: 100%;
+  margin-top: var(--step-2);
+  padding: 10px;
+  background: none;
+  border: 0;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 140ms ease;
+}
+.btn-giveup:hover:not(:disabled) { color: var(--paper); }
+.btn-giveup:disabled { opacity: 0.4; }
+
 /* ---------- reveal ---------- */
 .reveal {
   display: flex;
@@ -1770,23 +1790,6 @@ button:disabled { cursor: not-allowed; }
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
 }
-
-.applelink {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  text-decoration: none;
-  background: var(--paper);
-  color: #14121F;
-  border-radius: var(--radius);
-  padding: 13px var(--step-3);
-  font-size: 14px;
-  font-weight: 600;
-  transition: background 140ms ease;
-}
-.applelink:hover { background: #fff; }
-.applelink svg { flex-shrink: 0; }
 
 /* ---------- notices ---------- */
 .notice {
@@ -2594,11 +2597,6 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
     return h("svg", { width: s, height: s, viewBox: "0 0 24 24", fill: "currentColor", "aria-hidden": "true" },
       h("rect", { x: "6.5", y: "6.5", width: "11", height: "11", rx: "2" }));
   }
-  function IconApple() {
-    return h("svg", { width: "17", height: "17", viewBox: "0 0 24 24", fill: "currentColor", "aria-hidden": "true" },
-      h("path", { d: "M17.05 12.9c-.03-2.5 2.04-3.7 2.13-3.76-1.16-1.7-2.97-1.93-3.61-1.96-1.54-.16-3 .9-3.78.9-.78 0-1.98-.88-3.25-.86-1.67.03-3.21.97-4.07 2.46-1.73 3-.44 7.45 1.25 9.89.82 1.19 1.8 2.53 3.09 2.48 1.24-.05 1.71-.8 3.21-.8 1.5 0 1.92.8 3.23.78 1.33-.02 2.18-1.21 3-2.41.94-1.38 1.33-2.72 1.35-2.79-.03-.01-2.59-.99-2.62-3.93zM14.6 5.2c.68-.83 1.14-1.98 1.02-3.13-.98.04-2.17.65-2.88 1.48-.63.73-1.19 1.9-1.04 3.02 1.1.09 2.21-.55 2.9-1.37z" }));
-  }
-
   /* ------------------------------------------------------------------ */
   /* Typeahead                                                           */
   /* ------------------------------------------------------------------ */
@@ -2727,7 +2725,12 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
           disabled: disabled || !choice,
           onClick: function () { if (choice) onSubmit(choice); }
         }, "Submit guess")
-      )
+      ),
+      h("button", {
+        className: "btn-giveup",
+        disabled: disabled,
+        onClick: props.onGiveUp
+      }, "Give up and show me the song")
     );
   }
 
@@ -2992,6 +2995,17 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
       setPos(0);
     }
 
+    // Ends the round now. Skipping six times to reach a song you already know
+    // you cannot name is a chore, not a decision. The rows are left as they
+    // are rather than padded out to six, so the reveal shows what was actually
+    // tried - which is also what tells the verdict line to say "gave up"
+    // instead of "out of guesses".
+    function giveUp() {
+      if (over || !song) return;
+      setText("");
+      finish(false, guesses);
+    }
+
     /* ---- derived UI values ---- */
 
     var headFrac = 0;
@@ -3073,16 +3087,15 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 
     /* ---- reveal ---- */
     if (over) {
-      var appleUrl = (track && track.trackViewUrl)
-        || (song.trackId ? "https://music.apple.com/in/song/" + song.trackId : null);
-
       return frame(h("div", { className: "shell" },
         Masthead(),
         h("div", { className: "reveal" },
           h("div", { className: "verdict " + (phase === "won" ? "win" : "lose") },
             phase === "won"
               ? "Correct in " + guesses.length + (guesses.length === 1 ? " guess" : " guesses")
-              : "Out of guesses — the song was"),
+              : guesses.length >= MAX_ATTEMPTS
+                ? "Out of guesses — the song was"
+                : "Gave up — the song was"),
 
           h("div", { className: "card" },
             track && track.artwork
@@ -3119,17 +3132,16 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 
           offline ? h("div", { className: "notice" },
             h("b", null, "You heard stand-in audio, not the song."),
-            " Apple's previews are unreachable from here, so the clip was generated. The link below plays the real recording."
+            " Apple's previews are unreachable from here, so the clip was generated."
           ) : null,
 
-          // Apple requires the track link to be shown wherever their previews
-          // are used, so this is never conditional on the round's outcome.
-          appleUrl ? h("a", {
-            className: "applelink",
-            href: appleUrl,
-            target: "_blank",
-            rel: "noopener noreferrer"
-          }, h(IconApple), "Listen on Apple Music") : null,
+          // Directly under the player, above the guess history: moving on is
+          // what almost everyone wants next, and it should never be something
+          // you have to scroll past your own wrong answers to reach.
+          h("button", {
+            className: "btn btn-primary btn-next",
+            onClick: function () { startRound(played); }
+          }, "Next song"),
 
           h("div", { className: "rows" }, guesses.map(function (g, i) {
             return h("div", {
@@ -3139,12 +3151,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
               h("span", { className: "row-text" }, g.type === "skip" ? "Skipped" : g.title),
               h("span", { className: "row-tag" }, label(STEPS[i]))
             );
-          })),
-
-          h("button", {
-            className: "btn btn-primary",
-            onClick: function () { startRound(played); }
-          }, "Next song")
+          }))
         ),
         Foot()
       ));
@@ -3204,6 +3211,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
         disabled: false,
         onSubmit: submitGuess,
         onSkip: skip,
+        onGiveUp: giveUp,
         skipLabel: skipLabel
       }),
 

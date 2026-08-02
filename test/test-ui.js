@@ -303,6 +303,25 @@ async function blockedScenario() {
   ok('clicking again stops it', iconOf(ui.byClass('play')) === 'play');
 
   ok('still no network was reached', ui.urls.every(u => u.includes('itunes.apple.com')));
+
+  console.log('\n--- give up ends the round on the attempt it is pressed ---');
+  // An active round always renders six placeholders, so only FILLED rows count.
+  const filled = () => ui.nodes().filter(n =>
+    typeof n.props.className === 'string' &&
+    n.props.className.startsWith('row row-') &&
+    !n.props.className.includes('row-empty'));
+
+  ok('give up is offered from the very first attempt', !!ui.byText('Give up and show me'));
+  ok('no guesses have been made yet', filled().length === 0, filled().length + ' filled');
+
+  ui.click(ui.byText('Give up and show me'), 'give up');
+  ok('the round is over immediately', !!ui.byClass('verdict'));
+  ok('the song is revealed', !!ui.byClass('card'));
+  // Not "out of guesses". The rows are left as they are rather than padded to
+  // six, and the verdict line reads off how many there actually were.
+  ok('the verdict says gave up, not out of guesses',
+     textOf(ui.byClass('verdict')).includes('Gave up'), textOf(ui.byClass('verdict')));
+  ok('no phantom skip rows were invented', filled().length === 0, filled().length + ' filled');
 }
 
 /* ================================================================== */
@@ -385,8 +404,17 @@ async function onlineScenario() {
      textOf(ui.byClass('card')));
   ok('artwork upgraded to 600x600 on the reveal',
      !!ui.find(n => n.type === 'img' && n.props.src.includes('600x600')));
-  ok('Apple attribution link rendered', !!ui.find(n => n.type === 'a' &&
-     n.props.className === 'applelink'));
+  // "Next song" has to come BEFORE the guess history in document order. It is
+  // what almost everyone wants next, and on a phone anything below six rows of
+  // wrong answers is off the bottom of the screen.
+  const revealOrder = [];
+  ui.find(n => {
+    if (n.props && n.props.className === 'btn btn-primary btn-next') revealOrder.push('next');
+    if (n.props && n.props.className === 'rows') revealOrder.push('rows');
+    return false;
+  });
+  ok('next song sits above the guess history', revealOrder.join(',') === 'next,rows',
+     revealOrder.join(',') || 'neither found');
 
   // Song 102 was prefetched while the previous round was being guessed, so the
   // new round must reuse that result rather than asking for it again - and it
