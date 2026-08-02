@@ -1,0 +1,28 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# editors
+.vscode/
+.idea/
+*.swp
+
+# node (no runtime deps; only if you add tooling later)
+node_modules/
+package-lock.json
+
+# local scratch — headless-browser profiles and render dumps used when
+# verifying the build; never commit these
+chromeprofile*/
+cp[0-9]*/
+dom*.html
+shot-*.html
+off*.html
+diag*.html
+mobile-*.html
+*.err
+*.tmp
+
+# commit message scratch
+.commitmsg

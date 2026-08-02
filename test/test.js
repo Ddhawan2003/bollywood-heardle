@@ -1,0 +1,179 @@
+// Harness: run the real app code in Node with DOM/React stubs, then exercise
+// the actual JSONP resolution path against the live iTunes API.
+const fs = require('fs');
+const https = require('https');
+const vm = require('vm');
+
+const SP = __dirname;
+const html = fs.readFileSync(require('path').join(__dirname, '..', 'src', 'template.html'), 'utf8');
+
+// pull the song catalog + the app IIFE straight out of the shipped file
+const songsStart = html.indexOf('window.BOLLYWOOD_SONGS');
+const songsEnd = html.indexOf('</script>', songsStart);
+const songsSrc = html.slice(songsStart, songsEnd);
+
+const marker = html.indexOf('(function () {');
+const appStart = html.lastIndexOf('<script>', marker) + 8;
+const appEnd = html.indexOf('</script>', appStart);
+let appSrc = html.slice(appStart, appEnd);
+
+// expose internals for assertions
+appSrc = appSrc.replace(
+  'ReactDOM.createRoot(document.getElementById("root")).render(h(App));',
+  'window.__T = { norm, scoreResult, chunk, waveShape, label, fmt, seedFrom, resolveCatalog, STEPS, MAX_ATTEMPTS, WAVE_BARS };'
+);
+
+function get(url) {
+  return new Promise((res, rej) => {
+    https.get(url, { headers: { 'User-Agent': 'node' } }, r => {
+      let b = '';
+      r.on('data', d => (b += d));
+      r.on('end', () => res(b));
+    }).on('error', rej);
+  });
+}
+
+const sandbox = {
+  console,
+  setTimeout, clearTimeout, Promise, Math, Date, JSON, encodeURIComponent, isFinite,
+  Error, Infinity, String, Number, Array, Object, RegExp,
+  requestAnimationFrame: () => 0,
+  cancelAnimationFrame: () => {},
+};
+sandbox.window = sandbox;
+sandbox.globalThis = sandbox;
+
+// Minimal React stub - we never render, we only need the module to load.
+sandbox.React = {
+  createElement: () => ({}), Fragment: 'F',
+  useState: v => [v, () => {}], useEffect: () => {}, useRef: () => ({ current: null }),
+  useMemo: f => f(), useCallback: f => f,
+};
+sandbox.ReactDOM = { createRoot: () => ({ render: () => {} }) };
+
+// JSONP shim: honour script.src exactly as the browser would, then eval the
+// text/javascript response so the callback fires. This exercises the real URL
+// construction and the real response parsing.
+let jsonpCalls = [];
+sandbox.document = {
+  createElement: () => {
+    const el = { _src: '', onerror: null, parentNode: null };
+    Object.defineProperty(el, 'src', {
+      get() { return el._src; },
+      set(v) {
+        el._src = v;
+        jsonpCalls.push(v);
+        get(v).then(body => {
+          try { vm.runInContext(body, ctx); }
+          catch (e) { if (el.onerror) el.onerror(); }
+        }).catch(() => { if (el.onerror) el.onerror(); });
+      },
+    });
+    return el;
+  },
+  head: { appendChild: () => {} },
+  addEventListener: () => {}, removeEventListener: () => {},
+  getElementById: () => ({}),
+};
+
+const ctx = vm.createContext(sandbox);
+vm.runInContext(songsSrc, ctx);
+vm.runInContext(appSrc, ctx);
+
+const T = sandbox.__T;
+const SONGS = sandbox.BOLLYWOOD_SONGS;
+
+let pass = 0, fail = 0;
+function ok(name, cond, extra) {
+  if (cond) { pass++; console.log('  PASS  ' + name); }
+  else { fail++; console.log('  FAIL  ' + name + (extra ? '  -> ' + extra : '')); }
+}
+
+console.log('\n--- catalog ---');
+ok('18 songs', SONGS.length === 18, SONGS.length);
+ok('every song has title/artist/movie', SONGS.every(s => s.title && s.artist && s.movie));
+ok('titles unique', new Set(SONGS.map(s => s.title)).size === SONGS.length);
+ok('every seed song pinned to a trackId', SONGS.every(s => typeof s.trackId === 'number'));
+
+console.log('\n--- rules ---');
+ok('steps are 0.5,1,2,4,8,16', T.STEPS.join(',') === '0.5,1,2,4,8,16');
+ok('six attempts', T.MAX_ATTEMPTS === 6);
+ok('labels render', T.STEPS.map(T.label).join(' ') === '0.5s 1s 2s 4s 8s 16s', T.STEPS.map(T.label).join(' '));
+
+console.log('\n--- normalisation (typo / diacritic safety) ---');
+ok('accent-insensitive: Senorita == Señorita', T.norm('Senorita') === T.norm('Señorita'));
+ok('case-insensitive', T.norm('TUM HI HO') === T.norm('tum hi ho'));
+ok('punctuation-insensitive', T.norm('Kal Ho Naa Ho!') === T.norm('Kal Ho Naa Ho'));
+ok('hyphen folded', T.norm('Ram-Leela') === T.norm('ram leela'));
+ok('distinct songs stay distinct', T.norm('Kabira') !== T.norm('Kesariya'));
+
+console.log('\n--- variant scoring (remix must lose to the original) ---');
+const song = { title: 'Tum Hi Ho', movie: 'Aashiqui 2' };
+const orig = { trackName: 'Tum Hi Ho', collectionName: 'Aashiqui 2 (Original Motion Picture Soundtrack)', previewUrl: 'x' };
+const remix = { trackName: 'Tum Hi Ho (Remix)', collectionName: 'Aashiqui 2 (Original Motion Picture Soundtrack)', previewUrl: 'x' };
+const noprev = { trackName: 'Tum Hi Ho', collectionName: 'Aashiqui 2 (Original Motion Picture Soundtrack)' };
+ok('original beats remix', T.scoreResult(orig, song) > T.scoreResult(remix, song));
+ok('preview-less result rejected', T.scoreResult(noprev, song) === -Infinity);
+
+console.log('\n--- waveform ---');
+const w = T.waveShape(T.seedFrom('Kesariya'));
+ok('bar count', w.length === T.WAVE_BARS, w.length);
+ok('bars within 0..1', w.every(v => v > 0 && v <= 1));
+ok('deterministic per song', JSON.stringify(w) === JSON.stringify(T.waveShape(T.seedFrom('Kesariya'))));
+ok('differs across songs', JSON.stringify(w) !== JSON.stringify(T.waveShape(T.seedFrom('Gerua'))));
+
+console.log('\n--- simulated games (rules engine) ---');
+function playGame(strategy) {
+  let guesses = [];
+  while (true) {
+    const attempt = guesses.length;
+    const limit = T.STEPS[Math.min(attempt, 5)];
+    const move = strategy(attempt, limit);
+    if (move === 'correct') { guesses.push({ type: 'correct' }); return { won: true, guesses }; }
+    guesses.push({ type: move });
+    if (guesses.length >= T.MAX_ATTEMPTS) return { won: false, guesses };
+  }
+}
+const allSkip = playGame(() => 'skip');
+ok('six skips loses', !allSkip.won && allSkip.guesses.length === 6, allSkip.guesses.length);
+const allWrong = playGame(() => 'wrong');
+ok('six wrong loses', !allWrong.won && allWrong.guesses.length === 6);
+const mixed = playGame(a => (a < 3 ? (a % 2 ? 'skip' : 'wrong') : 'correct'));
+ok('skip consumes an attempt and advances', mixed.won && mixed.guesses.length === 4, mixed.guesses.length);
+ok('win on first guess', playGame(() => 'correct').guesses.length === 1);
+const unlockAt = n => (Math.min(n, 5) + 1) / 6;
+ok('unlock fraction grows monotonically', [0,1,2,3,4,5].every((n,i,a) => i===0 || unlockAt(n) > unlockAt(a[i-1])));
+ok('final attempt unlocks the full 16s', T.STEPS[5] === 16 && unlockAt(5) === 1);
+
+console.log('\n--- live iTunes resolution via JSONP ---');
+T.resolveCatalog(SONGS, () => {}).then(res => {
+  const names = Object.keys(res.tracks);
+  ok('not flagged offline', res.offline === false);
+  ok('all 18 resolved', names.length === 18, names.length);
+  ok('single batched lookup request', jsonpCalls.length === 1, jsonpCalls.length + ' calls');
+  ok('callback param appended (JSONP)', jsonpCalls[0].includes('callback=__itunes_cb_'));
+
+  const missingPrev = names.filter(n => !res.tracks[n].previewUrl);
+  ok('every track has a previewUrl', missingPrev.length === 0, missingPrev.join(','));
+  const missingView = names.filter(n => !res.tracks[n].trackViewUrl);
+  ok('every track has trackViewUrl (Apple attribution)', missingView.length === 0, missingView.join(','));
+  const missingArt = names.filter(n => !res.tracks[n].artwork);
+  ok('every track has artwork', missingArt.length === 0, missingArt.join(','));
+  ok('artwork upgraded to 600x600', res.tracks['Kesariya'].artwork.includes('600x600'));
+  ok('previews are m4a', names.every(n => res.tracks[n].previewUrl.includes('.m4a')));
+
+  const bad = names.filter(n => /remix|unplugged|karaoke|cover/i.test(res.tracks[n].itunesTitle));
+  ok('no remix/cover slipped into the catalog', bad.length === 0, bad.join(','));
+
+  console.log('\n  resolved sample:');
+  ['Tum Hi Ho', 'Senorita', 'Nagada Sang Dhol'].forEach(n => {
+    const t = res.tracks[n];
+    console.log('    ' + n + ' -> ' + t.itunesTitle + ' | ' + t.itunesAlbum);
+  });
+
+  console.log('\n================  ' + pass + ' passed, ' + fail + ' failed  ================\n');
+  process.exit(fail ? 1 : 0);
+}).catch(e => {
+  console.log('  FAIL  resolveCatalog threw: ' + e.message);
+  process.exit(1);
+});

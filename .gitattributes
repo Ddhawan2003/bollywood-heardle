@@ -1,0 +1,11 @@
+# Text files normalise to LF in the repository.
+* text=auto eol=lf
+
+# These must round-trip byte-for-byte. build.ps1 guarantees a reproducible
+# build, and line-ending rewriting on checkout would silently break that.
+bollywood-heardle.html -text
+vendor/react.min.js    -text
+vendor/react-dom.min.js -text
+vendor/anton.b64       -text
+
+*.png binary

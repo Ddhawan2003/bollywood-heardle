@@ -1,0 +1,1592 @@
+<title>Filmi — Guess the Bollywood Song</title>
+
+<!-- ===================================================================== -->
+<!--  EDIT ME: THE SONG CATALOG                                            -->
+<!--  Add songs by appending to this array. Fields:                        -->
+<!--    title  - what the player must guess (shown in autocomplete)        -->
+<!--    artist - display credit on the reveal screen                       -->
+<!--    movie  - film name, shown on reveal + used in the search term      -->
+<!--    term   - (optional) override the iTunes search string              -->
+<!--    trackId- (optional but RECOMMENDED) pins the exact iTunes track    -->
+<!--                                                                       -->
+<!--  NOTE ON FUZZY SEARCH: filmi search is messy. A plain term search can  -->
+<!--  return a Remix / Unplugged / Sad Version / cover instead of the       -->
+<!--  original - e.g. "Tum Hi Ho" has a remix sitting right behind the      -->
+<!--  original, and "Senorita" is spelled "Senorita" with a tilde-n on      -->
+<!--  Apple Music so an ASCII search misses it entirely. Every trackId      -->
+<!--  below was verified by hand against the iTunes API and points at the   -->
+<!--  original soundtrack recording. If you add a song WITHOUT a trackId    -->
+<!--  the app falls back to a scored term search, which is usually right    -->
+<!--  but not guaranteed - check it, then paste the trackId here to lock    -->
+<!--  it in. You can find an id at:                                         -->
+<!--  https://itunes.apple.com/search?term=YOUR+SONG&entity=song&country=IN -->
+<!-- ===================================================================== -->
+<script>
+window.BOLLYWOOD_SONGS = [
+  { title: "Tum Hi Ho",       artist: "Arijit Singh",                    movie: "Aashiqui 2",                  trackId: 1073359419 },
+  { title: "Chaiyya Chaiyya", artist: "Sukhwinder Singh, Sapna Awasthi", movie: "Dil Se",                      trackId: 1130322151 },
+  { title: "Kal Ho Naa Ho",   artist: "Sonu Nigam",                      movie: "Kal Ho Naa Ho",               trackId: 300388792  },
+  { title: "Gerua",           artist: "Arijit Singh, Antara Mitra",      movie: "Dilwale",                     trackId: 1057567670 },
+  { title: "Kabira",          artist: "Tochi Raina, Rekha Bhardwaj",     movie: "Yeh Jawaani Hai Deewani",     trackId: 1070912818 },
+  { title: "Channa Mereya",   artist: "Arijit Singh",                    movie: "Ae Dil Hai Mushkil",          trackId: 1169015785 },
+  { title: "Tujhe Dekha To",  artist: "Kumar Sanu, Lata Mangeshkar",     movie: "Dilwale Dulhania Le Jayenge", trackId: 1352484512 },
+  { title: "Ghungroo",        artist: "Arijit Singh, Shilpa Rao",        movie: "War",                         trackId: 1481956481 },
+  { title: "Malhari",         artist: "Vishal Dadlani",                  movie: "Bajirao Mastani",             trackId: 1842065696 },
+  { title: "Nagada Sang Dhol",artist: "Shreya Ghoshal, Osman Mir",       movie: "Ram-Leela",                   trackId: 1842063594 },
+  { title: "Badtameez Dil",   artist: "Benny Dayal, Shefali Alvares",    movie: "Yeh Jawaani Hai Deewani",     trackId: 1070912803 },
+  { title: "Kesariya",        artist: "Arijit Singh",                    movie: "Brahmastra",                  trackId: 1648663570 },
+  { title: "Apna Bana Le",    artist: "Arijit Singh",                    movie: "Bhediya",                     trackId: 1658238167 },
+  { title: "Dola Re Dola",    artist: "Shreya Ghoshal, Kavita Krishnamurthy", movie: "Devdas",                 trackId: 1442398478 },
+  { title: "Galliyan",        artist: "Ankit Tiwari",                    movie: "Ek Villain",                  trackId: 1111741439 },
+  { title: "Ilahi",           artist: "Arijit Singh",                    movie: "Yeh Jawaani Hai Deewani",     trackId: 1070912815 },
+  { title: "Deewani Mastani", artist: "Shreya Ghoshal",                  movie: "Bajirao Mastani",             trackId: 1842065694 },
+  { title: "Senorita",        artist: "Farhan Akhtar, Maria Del Mar Fernandez", movie: "Zindagi Na Milegi Dobara", trackId: 1116365492 }
+];
+</script>
+
+<style>
+/* Anton, inlined as a data URI. The Artifact CSP blocks font CDNs, so a
+   linked webfont would silently fall back to a system face. */
+@font-face {
+  font-family: 'Anton';
+  src: url(data:font/woff2;base64,__ANTON_B64__) format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
+/* This design commits to a single dark world on purpose - it is a darkened
+   cinema hall, not a document. The tokens are pinned so the viewer's theme
+   toggle cannot half-invert it into something broken. */
+:root, :root[data-theme="dark"], :root[data-theme="light"] {
+  --ink:      #0A0910;
+  --ink-2:    #15121F;
+  --ink-3:    #211D30;
+  --ink-4:    #2C2740;
+  --line:     #322C48;
+  --marigold: #F2A93B;
+  --marigold-dim: #7A5620;
+  --rose:     #D8456F;
+  --jade:     #35C88A;
+  --muted:    #8E86A6;
+  --muted-2:  #635C7A;
+  --paper:    #F4F1EA;
+
+  --step-1: 6px;
+  --step-2: 10px;
+  --step-3: 16px;
+  --step-4: 24px;
+  --step-5: 36px;
+
+  --radius: 8px;
+  --font-display: 'Anton', 'Haettenschweiler', 'Arial Narrow', sans-serif;
+  --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
+
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--ink);
+  /* two very soft pools of warm light, like a projector bulb */
+  /* Deliberately not background-attachment: fixed - it makes the compositor
+     repaint the whole page behind the reveal animation and leaves ghost text. */
+  background-image:
+    radial-gradient(60rem 40rem at 50% -10%, rgba(242,169,59,0.10), transparent 60%),
+    radial-gradient(45rem 35rem at 90% 105%, rgba(216,69,111,0.07), transparent 65%);
+  background-repeat: no-repeat;
+  color: var(--paper);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+#root { min-height: 100vh; }
+
+.shell {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: var(--step-4) var(--step-3) var(--step-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--step-3);
+  min-height: 100vh;
+}
+
+/* ---------- masthead ---------- */
+.masthead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--step-3);
+  border-bottom: 1px solid var(--line);
+  padding-bottom: var(--step-2);
+}
+.wordmark {
+  font-family: var(--font-display);
+  font-size: clamp(30px, 8vw, 40px);
+  letter-spacing: 0.02em;
+  line-height: 0.9;
+  margin: 0;
+  color: var(--paper);
+  text-transform: uppercase;
+}
+.wordmark em {
+  font-style: normal;
+  color: var(--marigold);
+}
+.tagline {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+  margin: 4px 0 0;
+}
+.scoreline {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.scoreline b { color: var(--marigold); font-weight: 600; }
+
+/* Demo-mode badge. This has to stay visible on every screen - if it only shows
+   on the start screen, a player who clicks straight through has no idea the
+   audio is synthesised rather than the real recording. */
+.demochip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--rose);
+  border: 1px solid rgba(216,69,111,0.45);
+  background: rgba(216,69,111,0.10);
+  border-radius: 999px;
+  padding: 3px 9px;
+  white-space: nowrap;
+}
+.demochip::before {
+  content: "";
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--rose);
+  flex-shrink: 0;
+}
+
+/* ---------- generic controls ---------- */
+button { font-family: inherit; cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+
+:where(button, input, a, [tabindex]):focus-visible {
+  outline: 2px solid var(--marigold);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.btn {
+  border: 1px solid var(--line);
+  background: var(--ink-3);
+  color: var(--paper);
+  border-radius: var(--radius);
+  padding: 13px var(--step-3);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: background 140ms ease, border-color 140ms ease, transform 100ms ease;
+}
+.btn:hover:not(:disabled) { background: var(--ink-4); border-color: var(--muted-2); }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn:disabled { opacity: 0.4; }
+
+.btn-primary {
+  background: var(--marigold);
+  border-color: var(--marigold);
+  color: #1A1206;
+  font-weight: 700;
+}
+.btn-primary:hover:not(:disabled) { background: #FFBE55; border-color: #FFBE55; }
+
+.btn-mono {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+
+/* ---------- start screen ---------- */
+.start {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: var(--step-3);
+  text-align: center;
+  padding: var(--step-5) 0;
+}
+.start-lede {
+  max-width: 32ch;
+  color: var(--paper);
+  font-size: 18px;
+  line-height: 1.45;
+  margin: 0;
+  text-wrap: balance;
+}
+.start-steps {
+  display: flex;
+  gap: var(--step-1);
+  flex-wrap: wrap;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--muted-2);
+  margin-top: 2px;
+}
+.start-steps span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 9px;
+}
+.start-steps span:first-child { color: var(--marigold); border-color: var(--marigold-dim); }
+
+/* ---------- guess rows ---------- */
+.rows { display: flex; flex-direction: column; gap: var(--step-1); }
+
+.row {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  gap: var(--step-2);
+  padding: 7px var(--step-2) 7px 11px;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  border-left-width: 3px;
+  border-left-color: var(--ink-4);
+  border-radius: var(--radius);
+  font-size: 14px;
+  animation: rowIn 260ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+.row-empty {
+  background: transparent;
+  border-style: dashed;
+  border-left-style: dashed;
+  border-color: var(--ink-3);
+  animation: none;
+}
+.row-wrong { border-left-color: var(--rose); }
+.row-wrong .row-text {
+  text-decoration: line-through;
+  text-decoration-color: var(--muted-2);
+  color: var(--muted);
+}
+.row-skip { border-left-color: var(--muted-2); }
+.row-skip .row-text { color: var(--muted-2); font-style: italic; }
+.row-correct {
+  border-left-color: var(--jade);
+  border-color: rgba(53,200,138,0.35);
+  background: rgba(53,200,138,0.09);
+}
+.row-correct .row-text { color: var(--jade); font-weight: 600; }
+
+.row-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* No uppercase transform here: it would render the duration as "0.5S" while
+   the timeline ticks below say "0.5s". */
+.row-tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--muted-2);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+@keyframes rowIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ---------- waveform + timeline ---------- */
+.stage { display: flex; flex-direction: column; gap: var(--step-2); }
+
+.wave {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 58px;
+  padding: 0 2px;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.wave-bar {
+  flex: 1;
+  min-width: 0;
+  border-radius: 1px;
+  background: var(--ink-4);
+  transition: background 120ms linear, opacity 120ms linear;
+}
+.wave-bar.is-unlocked { background: var(--marigold-dim); }
+.wave-bar.is-hot { background: var(--marigold); }
+.wave-seg {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--ink);
+  opacity: 0.9;
+  pointer-events: none;
+}
+.wave-head {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--paper);
+  box-shadow: 0 0 10px rgba(244,241,234,0.6);
+  pointer-events: none;
+}
+
+.ticks {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 2px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--muted-2);
+  font-variant-numeric: tabular-nums;
+}
+.tick {
+  text-align: center;
+  padding: 3px 0;
+  border-top: 2px solid var(--ink-3);
+  transition: color 140ms ease, border-color 140ms ease;
+}
+.tick.is-on { color: var(--marigold); border-top-color: var(--marigold-dim); }
+.tick.is-now { color: var(--paper); border-top-color: var(--marigold); }
+
+/* ---------- transport ---------- */
+.transport {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--step-3);
+  padding: var(--step-1) 0;
+}
+.play {
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  border: 2px solid var(--marigold);
+  background: radial-gradient(circle at 50% 35%, rgba(242,169,59,0.22), rgba(242,169,59,0.06));
+  color: var(--marigold);
+  display: grid;
+  place-items: center;
+  transition: transform 140ms cubic-bezier(0.2,0.7,0.3,1), background 160ms ease, box-shadow 200ms ease;
+  flex-shrink: 0;
+}
+.play:hover:not(:disabled) {
+  transform: scale(1.05);
+  background: radial-gradient(circle at 50% 35%, rgba(242,169,59,0.34), rgba(242,169,59,0.12));
+  box-shadow: 0 0 0 8px rgba(242,169,59,0.06);
+}
+.play:active:not(:disabled) { transform: scale(0.97); }
+.play:disabled { opacity: 0.35; border-color: var(--muted-2); color: var(--muted-2); background: none; }
+.play svg { display: block; }
+.play.is-idle { animation: breathe 3.4s ease-in-out infinite; }
+@keyframes breathe {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(242,169,59,0.16); }
+  50%      { box-shadow: 0 0 0 12px rgba(242,169,59,0); }
+}
+
+.transport-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  min-width: 88px;
+}
+/* text-transform is reset here so the duration reads "0.5s", matching the
+   timeline ticks, while the caption under it stays uppercase. */
+.transport-meta b {
+  display: block;
+  color: var(--paper);
+  font-size: 21px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* ---------- typeahead ---------- */
+.guessbar { display: flex; flex-direction: column; gap: var(--step-2); position: relative; }
+
+.combo { position: relative; }
+.combo input {
+  width: 100%;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--paper);
+  font-family: inherit;
+  font-size: 15px;
+  padding: 14px var(--step-3);
+  transition: border-color 140ms ease, background 140ms ease;
+}
+.combo input::placeholder { color: var(--muted-2); }
+.combo input:focus {
+  outline: none;
+  border-color: var(--marigold);
+  background: var(--ink-3);
+}
+
+.listbox {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 244px;
+  overflow-y: auto;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 -14px 40px rgba(0,0,0,0.6);
+  z-index: 20;
+  padding: 4px;
+  margin: 0;
+  list-style: none;
+}
+.option {
+  padding: 9px 11px;
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 14px;
+}
+.option:hover, .option.is-active { background: var(--ink-4); }
+.option.is-active { box-shadow: inset 2px 0 0 var(--marigold); }
+.option-title { color: var(--paper); }
+.option-movie {
+  font-size: 11px;
+  color: var(--muted-2);
+  margin-left: auto;
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 45%;
+}
+.listbox-empty {
+  padding: 11px;
+  color: var(--muted-2);
+  font-size: 13px;
+  text-align: center;
+}
+
+.actions { display: flex; gap: var(--step-2); }
+.actions .btn { flex: 1; }
+.actions .btn-submit { flex: 1.4; }
+
+/* ---------- reveal ---------- */
+.reveal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--step-3);
+  animation: revealIn 400ms cubic-bezier(0.2,0.7,0.3,1) both;
+}
+@keyframes revealIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.verdict {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+.verdict.win  { color: var(--jade); }
+.verdict.lose { color: var(--rose); }
+
+.card {
+  display: flex;
+  gap: var(--step-3);
+  align-items: center;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--step-3);
+}
+.cover {
+  width: 104px;
+  height: 104px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  object-fit: cover;
+  background: var(--ink-4);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-size: 30px;
+  color: rgba(255,255,255,0.72);
+  overflow: hidden;
+}
+.card-meta { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.card-title {
+  font-family: var(--font-display);
+  font-size: clamp(24px, 6vw, 32px);
+  line-height: 1;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  text-wrap: balance;
+}
+.card-artist { color: var(--paper); font-size: 14px; }
+.card-movie {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--marigold);
+}
+
+.fullplayer {
+  display: flex;
+  align-items: center;
+  gap: var(--step-2);
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--step-2) var(--step-3);
+}
+.mini-play {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--marigold);
+  background: rgba(242,169,59,0.12);
+  color: var(--marigold);
+  display: grid; place-items: center;
+  flex-shrink: 0;
+}
+.mini-play:hover { background: rgba(242,169,59,0.24); }
+.scrub {
+  flex: 1;
+  height: 4px;
+  background: var(--ink-4);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.scrub-fill { height: 100%; background: var(--marigold); border-radius: 999px; }
+.clock {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.applelink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  text-decoration: none;
+  background: var(--paper);
+  color: #14121F;
+  border-radius: var(--radius);
+  padding: 13px var(--step-3);
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 140ms ease;
+}
+.applelink:hover { background: #fff; }
+.applelink svg { flex-shrink: 0; }
+
+/* ---------- notices ---------- */
+.notice {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--marigold);
+  background: var(--ink-2);
+  border-radius: var(--radius);
+  padding: var(--step-2) var(--step-3);
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+.notice b { color: var(--paper); font-weight: 600; }
+.notice code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--marigold);
+  background: var(--ink-3);
+  border-radius: 4px;
+  padding: 1px 5px;
+  word-break: break-all;
+}
+.notice.bad { border-left-color: var(--rose); }
+
+.loading {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--step-3);
+  text-align: center;
+}
+.meter {
+  width: 190px;
+  height: 3px;
+  background: var(--ink-3);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.meter-fill {
+  height: 100%;
+  background: var(--marigold);
+  transition: width 260ms ease;
+}
+.loading-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+}
+
+.foot {
+  margin-top: auto;
+  padding-top: var(--step-3);
+  border-top: 1px solid var(--line);
+  font-size: 11px;
+  color: var(--muted-2);
+  line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.foot a { color: var(--muted); }
+
+@media (max-width: 420px) {
+  .card { flex-direction: column; align-items: flex-start; text-align: left; }
+  .cover { width: 100%; height: 150px; }
+  .transport { gap: var(--step-2); }
+  .transport-meta { min-width: 72px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+</style>
+
+<div id="root"></div>
+
+<!-- React 18.3.1 UMD (production). Inlined because the Artifact CSP blocks
+     external scripts - a CDN <script src> would never load. Vendor code:
+     nothing below this line until the app script is worth reading. -->
+<script>__REACT_JS__</script>
+<script>__REACT_DOM_JS__</script>
+
+<script>
+(function () {
+  "use strict";
+
+  var React = window.React, ReactDOM = window.ReactDOM;
+  var h = React.createElement;
+  var useState = React.useState, useEffect = React.useEffect, useRef = React.useRef,
+      useMemo = React.useMemo, useCallback = React.useCallback;
+
+  /* ------------------------------------------------------------------ */
+  /* Rules                                                               */
+  /* ------------------------------------------------------------------ */
+
+  var STEPS = [0.5, 1, 2, 4, 8, 16];   // seconds unlocked at each attempt
+  var MAX_ATTEMPTS = STEPS.length;     // six guesses, skip included
+  var WAVE_BARS = 56;
+
+  /* ------------------------------------------------------------------ */
+  /* iTunes Search API over JSONP                                        */
+  /*                                                                     */
+  /* A plain fetch() to itunes.apple.com is blocked by CORS - Apple sends */
+  /* no Access-Control-Allow-Origin. The API does support JSONP, so we    */
+  /* append &callback=fn and inject a <script>. Script tags are not       */
+  /* subject to the same-origin policy, so this works from file:// and    */
+  /* from any host. It is also the only mechanism available with no key,  */
+  /* no auth and no backend.                                              */
+  /* ------------------------------------------------------------------ */
+
+  var jsonpSeq = 0;
+
+  function jsonp(url, timeoutMs) {
+    return new Promise(function (resolve, reject) {
+      var cb = "__itunes_cb_" + (++jsonpSeq) + "_" + Date.now().toString(36);
+      var script = document.createElement("script");
+      var settled = false;
+
+      function cleanup() {
+        clearTimeout(timer);
+        try { delete window[cb]; } catch (e) { window[cb] = undefined; }
+        if (script.parentNode) script.parentNode.removeChild(script);
+      }
+      function settle(err, data) {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        if (err) reject(err); else resolve(data);
+      }
+
+      var timer = setTimeout(function () { settle(new Error("timeout")); }, timeoutMs || 12000);
+
+      window[cb] = function (data) { settle(null, data); };
+      // A CSP that forbids external scripts fires onerror here, which is how
+      // we detect a sandboxed environment and fall back to demo mode.
+      script.onerror = function () { settle(new Error("blocked")); };
+      script.src = url + (url.indexOf("?") === -1 ? "?" : "&") + "callback=" + cb;
+      document.head.appendChild(script);
+    });
+  }
+
+  var BAD_VARIANTS = [
+    "remix", "unplugged", "sad version", "cover", "instrumental", "lofi",
+    "lo-fi", "reprise", "karaoke", "encore", "mashup", "recreated",
+    "dialogues", "live", "slowed"
+  ];
+
+  // Score a fuzzy search result so an original soundtrack cut beats a remix.
+  // Only used for songs added without a pinned trackId.
+  function scoreResult(r, song) {
+    if (!r.previewUrl) return -Infinity;
+    var track = (r.trackName || "").toLowerCase();
+    var album = (r.collectionName || "").toLowerCase();
+    var want = song.title.toLowerCase();
+    var score = 0;
+
+    if (track === want) score += 10;
+    else if (track.indexOf(want) === 0) score += 5;
+
+    for (var i = 0; i < BAD_VARIANTS.length; i++) {
+      if (track.indexOf(BAD_VARIANTS[i]) !== -1) score -= 12;
+    }
+    if (album.indexOf("original motion picture soundtrack") !== -1) score += 6;
+
+    var words = song.movie.toLowerCase().split(/\s+/);
+    for (var j = 0; j < words.length; j++) {
+      if (words[j].length > 3 && album.indexOf(words[j]) !== -1) score += 2;
+    }
+    return score;
+  }
+
+  function toTrack(r) {
+    return {
+      previewUrl: r.previewUrl,
+      artwork: r.artworkUrl100 ? r.artworkUrl100.replace(/100x100/, "600x600") : null,
+      trackViewUrl: r.trackViewUrl,
+      itunesTitle: r.trackName,
+      itunesArtist: r.artistName,
+      itunesAlbum: r.collectionName
+    };
+  }
+
+  function chunk(arr, n) {
+    var out = [];
+    for (var i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n));
+    return out;
+  }
+
+  // Resolves every song's previewUrl once, at load, and hands back a map that
+  // the session then reuses. Returns { tracks, offline }.
+  function resolveCatalog(songs, onProgress) {
+    var tracks = {};
+    var pinned = songs.filter(function (s) { return s.trackId; });
+    var loose = songs.filter(function (s) { return !s.trackId; });
+    var done = 0;
+    var total = songs.length;
+
+    function bump(n) {
+      done += n;
+      if (onProgress) onProgress(Math.min(done, total), total);
+    }
+
+    // Pinned ids resolve in bulk - /lookup accepts comma-separated ids, so the
+    // 18 seed songs cost a single request.
+    var jobs = chunk(pinned, 20).map(function (group) {
+      var ids = group.map(function (s) { return s.trackId; }).join(",");
+      return jsonp("https://itunes.apple.com/lookup?id=" + ids + "&country=IN")
+        .then(function (data) {
+          var byId = {};
+          (data.results || []).forEach(function (r) { byId[r.trackId] = r; });
+          group.forEach(function (s) {
+            var r = byId[s.trackId];
+            if (r && r.previewUrl) tracks[s.title] = toTrack(r);
+          });
+          bump(group.length);
+        });
+    });
+
+    // Anything the user adds without a trackId falls back to a scored search.
+    loose.forEach(function (s) {
+      var term = s.term || (s.title + " " + s.artist + " " + s.movie);
+      var url = "https://itunes.apple.com/search?term=" + encodeURIComponent(term) +
+                "&entity=song&country=IN&limit=10";
+      jobs.push(
+        jsonp(url).then(function (data) {
+          var best = null, bestScore = -Infinity;
+          (data.results || []).forEach(function (r) {
+            var sc = scoreResult(r, s);
+            if (sc > bestScore) { bestScore = sc; best = r; }
+          });
+          if (best && best.previewUrl) tracks[s.title] = toTrack(best);
+          bump(1);
+        }).catch(function () { bump(1); })   // one dud song must not sink the set
+      );
+    });
+
+    // A single blocked request means no network at all (sandbox / offline).
+    return Promise.all(jobs)
+      .then(function () { return { tracks: tracks, offline: false }; })
+      .catch(function () { return { tracks: tracks, offline: true }; });
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Players                                                             */
+  /*                                                                     */
+  /* Two implementations behind one interface. The real one drives an     */
+  /* <audio> element pointed at Apple's preview. The synth one exists so  */
+  /* the sandboxed build is still explorable when the network is gone.    */
+  /* ------------------------------------------------------------------ */
+
+  function whenPlayable(el) {
+    return new Promise(function (resolve, reject) {
+      if (el.readyState >= 2) return resolve();
+      var timer = setTimeout(function () { off(); reject(new Error("audio-timeout")); }, 15000);
+      function ok()  { off(); resolve(); }
+      function bad() { off(); reject(new Error("audio-error")); }
+      function off() {
+        clearTimeout(timer);
+        el.removeEventListener("canplay", ok);
+        el.removeEventListener("error", bad);
+      }
+      el.addEventListener("canplay", ok);
+      el.addEventListener("error", bad);
+    });
+  }
+
+  function makeAudioPlayer(el) {
+    var raf = 0, stopAt = 0, onTick = null, onEnd = null;
+
+    function loop() {
+      if (el.currentTime >= stopAt) { stop(); if (onEnd) onEnd(); return; }
+      if (onTick) onTick(el.currentTime);
+      raf = requestAnimationFrame(loop);
+    }
+    function stop() {
+      cancelAnimationFrame(raf);
+      raf = 0;
+      try { el.pause(); } catch (e) {}
+    }
+    return {
+      kind: "audio",
+      load: function (track) {
+        stop();
+        el.src = track.previewUrl;
+        el.load();
+      },
+      duration: function () {
+        return isFinite(el.duration) && el.duration > 0 ? el.duration : 30;
+      },
+      // limit === null plays the whole preview (reveal screen).
+      play: function (limit, cbs) {
+        stop();
+        onTick = cbs && cbs.onTick;
+        onEnd = cbs && cbs.onEnd;
+        return whenPlayable(el).then(function () {
+          stopAt = limit == null ? (isFinite(el.duration) ? el.duration : 30) : limit;
+          try { el.currentTime = 0; } catch (e) {}
+          var p = el.play();
+          raf = requestAnimationFrame(loop);
+          return p;
+        });
+      },
+      stop: stop
+    };
+  }
+
+  // Procedural stand-in. Builds a short phrase on a Yaman-ish scale so each
+  // song still sounds like a distinct piece of music rather than a beep.
+  function makeSynthPlayer() {
+    var ctx = null, nodes = [], timer = 0, raf = 0, startedAt = 0, notes = [], onTick = null, onEnd = null;
+    var SCALE = [0, 2, 4, 6, 7, 9, 11];
+    var TOTAL = 24;
+
+    function rng(seed) {
+      var s = (seed >>> 0) || 1;
+      return function () { s = (s * 1664525 + 1013904223) >>> 0; return (s >>> 8) / 16777216; };
+    }
+    function build(seed) {
+      var rand = rng(seed);
+      var root = 196 * Math.pow(2, Math.floor(rand() * 4) / 12);
+      var beat = 0.26 + rand() * 0.12;
+      var out = [];
+      var t = 0, i = 0;
+      while (t < TOTAL) {
+        var deg = SCALE[Math.floor(rand() * SCALE.length)];
+        var oct = rand() > 0.76 ? 2 : 1;
+        var dur = beat * (rand() > 0.82 ? 2 : 1);
+        out.push({ t: t, f: root * oct * Math.pow(2, deg / 12), d: dur, bass: i % 8 === 0 });
+        t += dur; i++;
+      }
+      return out;
+    }
+    function clear() {
+      cancelAnimationFrame(raf); raf = 0;
+      clearTimeout(timer); timer = 0;
+      nodes.forEach(function (n) { try { n.stop(); } catch (e) {} try { n.disconnect(); } catch (e) {} });
+      nodes = [];
+    }
+    return {
+      kind: "synth",
+      load: function (track) {
+        clear();
+        notes = build(track.seed || 7);
+      },
+      duration: function () { return TOTAL; },
+      play: function (limit, cbs) {
+        clear();
+        onTick = cbs && cbs.onTick;
+        onEnd = cbs && cbs.onEnd;
+        if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+        if (ctx.state === "suspended") ctx.resume();
+
+        var span = limit == null ? TOTAL : limit;
+        var t0 = ctx.currentTime + 0.06;
+        startedAt = t0;
+
+        notes.forEach(function (n) {
+          if (n.t >= span) return;
+          var osc = ctx.createOscillator();
+          var gain = ctx.createGain();
+          osc.type = n.bass ? "triangle" : "sine";
+          osc.frequency.value = n.bass ? n.f / 2 : n.f;
+          var at = t0 + n.t;
+          var peak = n.bass ? 0.13 : 0.09;
+          gain.gain.setValueAtTime(0.0001, at);
+          gain.gain.exponentialRampToValueAtTime(peak, at + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, at + n.d * 0.95);
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.start(at);
+          osc.stop(at + n.d);
+          nodes.push(osc);
+        });
+
+        function tick() {
+          var pos = ctx.currentTime - startedAt;
+          if (pos >= span) { clear(); if (onEnd) onEnd(); return; }
+          if (onTick && pos >= 0) onTick(pos);
+          raf = requestAnimationFrame(tick);
+        }
+        raf = requestAnimationFrame(tick);
+        return Promise.resolve();
+      },
+      stop: clear
+    };
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Helpers                                                             */
+  /* ------------------------------------------------------------------ */
+
+  // "Senorita" must match "Senorita" spelled with a tilde-n, and casing and
+  // punctuation should never cost the player a guess.
+  function norm(s) {
+    return (s || "")
+      .normalize("NFD").replace(/[̀-ͯ]/g, "")
+      .toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  }
+
+  function seedFrom(str) {
+    var s = 0;
+    for (var i = 0; i < str.length; i++) s = (s * 31 + str.charCodeAt(i)) >>> 0;
+    return s || 1;
+  }
+
+  function waveShape(seed) {
+    var s = seed >>> 0 || 1;
+    var out = [];
+    for (var i = 0; i < WAVE_BARS; i++) {
+      s = (s * 1664525 + 1013904223) >>> 0;
+      var r = (s >>> 8) / 16777216;
+      var swell = 0.55 + 0.45 * Math.sin((i / WAVE_BARS) * Math.PI * 3.1);
+      out.push(Math.max(0.14, Math.min(1, 0.2 + 0.8 * Math.pow(r, 1.35) * swell)));
+    }
+    return out;
+  }
+
+  function fmt(sec) {
+    if (!isFinite(sec) || sec < 0) sec = 0;
+    var m = Math.floor(sec / 60);
+    var s = Math.floor(sec % 60);
+    return m + ":" + (s < 10 ? "0" : "") + s;
+  }
+
+  function label(sec) { return (sec < 1 ? "0.5" : String(sec)) + "s"; }
+
+  /* ------------------------------------------------------------------ */
+  /* Icons                                                               */
+  /* ------------------------------------------------------------------ */
+
+  function IconPlay(props) {
+    var s = (props && props.size) || 30;
+    return h("svg", { width: s, height: s, viewBox: "0 0 24 24", fill: "currentColor", "aria-hidden": "true" },
+      h("path", { d: "M8 5.5c0-.8.9-1.3 1.5-.9l8.4 5.6c.6.4.6 1.2 0 1.6l-8.4 5.6c-.7.4-1.5-.1-1.5-.9V5.5z" }));
+  }
+  function IconStop(props) {
+    var s = (props && props.size) || 30;
+    return h("svg", { width: s, height: s, viewBox: "0 0 24 24", fill: "currentColor", "aria-hidden": "true" },
+      h("rect", { x: "6.5", y: "6.5", width: "11", height: "11", rx: "2" }));
+  }
+  function IconApple() {
+    return h("svg", { width: "17", height: "17", viewBox: "0 0 24 24", fill: "currentColor", "aria-hidden": "true" },
+      h("path", { d: "M17.05 12.9c-.03-2.5 2.04-3.7 2.13-3.76-1.16-1.7-2.97-1.93-3.61-1.96-1.54-.16-3 .9-3.78.9-.78 0-1.98-.88-3.25-.86-1.67.03-3.21.97-4.07 2.46-1.73 3-.44 7.45 1.25 9.89.82 1.19 1.8 2.53 3.09 2.48 1.24-.05 1.71-.8 3.21-.8 1.5 0 1.92.8 3.23.78 1.33-.02 2.18-1.21 3-2.41.94-1.38 1.33-2.72 1.35-2.79-.03-.01-2.59-.99-2.62-3.93zM14.6 5.2c.68-.83 1.14-1.98 1.02-3.13-.98.04-2.17.65-2.88 1.48-.63.73-1.19 1.9-1.04 3.02 1.1.09 2.21-.55 2.9-1.37z" }));
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Typeahead                                                           */
+  /* ------------------------------------------------------------------ */
+
+  function Typeahead(props) {
+    var songs = props.songs, disabled = props.disabled, onSubmit = props.onSubmit;
+    var text = props.text, setText = props.setText;
+    var [open, setOpen] = useState(false);
+    var [active, setActive] = useState(0);
+    var wrapRef = useRef(null);
+
+    var matches = useMemo(function () {
+      var q = norm(text);
+      if (!q) return songs.slice(0, 60);
+      var starts = [], contains = [];
+      songs.forEach(function (s) {
+        var t = norm(s.title), m = norm(s.movie);
+        if (t.indexOf(q) === 0) starts.push(s);
+        else if (t.indexOf(q) !== -1 || m.indexOf(q) !== -1) contains.push(s);
+      });
+      return starts.concat(contains).slice(0, 60);
+    }, [text, songs]);
+
+    useEffect(function () { setActive(0); }, [text]);
+
+    // Click-away closes the list.
+    useEffect(function () {
+      function onDoc(e) {
+        if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+      }
+      document.addEventListener("mousedown", onDoc);
+      return function () { document.removeEventListener("mousedown", onDoc); };
+    }, []);
+
+    // Only a title that exists in the catalog can be submitted, so a typo can
+    // never burn one of the six attempts.
+    var exact = useMemo(function () {
+      var q = norm(text);
+      if (!q) return null;
+      for (var i = 0; i < songs.length; i++) if (norm(songs[i].title) === q) return songs[i];
+      return null;
+    }, [text, songs]);
+
+    function choose(song) {
+      setText(song.title);
+      setOpen(false);
+    }
+
+    function onKeyDown(e) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setOpen(true);
+        setActive(function (a) { return Math.min(a + 1, matches.length - 1); });
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setActive(function (a) { return Math.max(a - 1, 0); });
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        if (open && matches[active]) choose(matches[active]);
+        else if (exact) onSubmit(exact);
+      } else if (e.key === "Escape") {
+        setOpen(false);
+      }
+    }
+
+    return h("div", { className: "guessbar" },
+      h("div", { className: "combo", ref: wrapRef },
+        open && !disabled ? h("ul", {
+          className: "listbox",
+          role: "listbox",
+          "aria-label": "Song suggestions"
+        },
+          matches.length === 0
+            ? h("li", { className: "listbox-empty" }, "No song in the list matches that")
+            : matches.map(function (s, i) {
+                return h("li", {
+                  key: s.title,
+                  role: "option",
+                  "aria-selected": i === active,
+                  className: "option" + (i === active ? " is-active" : ""),
+                  onMouseEnter: function () { setActive(i); },
+                  onMouseDown: function (e) { e.preventDefault(); choose(s); }
+                },
+                  h("span", { className: "option-title" }, s.title),
+                  h("span", { className: "option-movie" }, s.movie));
+              })
+        ) : null,
+        h("input", {
+          type: "text",
+          value: text,
+          disabled: disabled,
+          placeholder: "Type a song title…",
+          autoComplete: "off",
+          spellCheck: false,
+          role: "combobox",
+          "aria-expanded": open,
+          "aria-autocomplete": "list",
+          onChange: function (e) { setText(e.target.value); setOpen(true); },
+          onFocus: function () { setOpen(true); },
+          onKeyDown: onKeyDown
+        })
+      ),
+      h("div", { className: "actions" },
+        h("button", {
+          className: "btn btn-mono",
+          disabled: disabled,
+          onClick: props.onSkip
+        }, props.skipLabel),
+        h("button", {
+          className: "btn btn-primary btn-submit",
+          disabled: disabled || !exact,
+          onClick: function () { if (exact) onSubmit(exact); }
+        }, "Submit guess")
+      )
+    );
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Waveform                                                            */
+  /* ------------------------------------------------------------------ */
+
+  function Waveform(props) {
+    var shape = props.shape, unlocked = props.unlocked, head = props.head;
+    return h("div", { className: "wave" },
+      shape.map(function (v, i) {
+        var f = (i + 0.5) / WAVE_BARS;
+        var cls = "wave-bar";
+        if (f <= head) cls += " is-hot";
+        else if (f <= unlocked) cls += " is-unlocked";
+        return h("div", { key: i, className: cls, style: { height: (v * 100) + "%" } });
+      }),
+      [1, 2, 3, 4, 5].map(function (n) {
+        return h("div", { key: "s" + n, className: "wave-seg", style: { left: ((n / 6) * 100) + "%" } });
+      }),
+      head > 0 ? h("div", { className: "wave-head", style: { left: (head * 100) + "%" } }) : null
+    );
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* App                                                                 */
+  /* ------------------------------------------------------------------ */
+
+  function App() {
+    var SONGS = window.BOLLYWOOD_SONGS || [];
+
+    var [phase, setPhase] = useState("loading");   // loading | start | play | won | lost
+    var [tracks, setTracks] = useState({});
+    var [offline, setOffline] = useState(false);
+    var [progress, setProgress] = useState({ done: 0, total: SONGS.length });
+
+    var [song, setSong] = useState(null);
+    var [guesses, setGuesses] = useState([]);
+    var [text, setText] = useState("");
+    var [played, setPlayed] = useState([]);
+    var [score, setScore] = useState({ won: 0, total: 0 });
+
+    var [pos, setPos] = useState(0);
+    var [busy, setBusy] = useState(false);
+    var [audioErr, setAudioErr] = useState("");
+
+    var audioRef = useRef(null);
+    var playerRef = useRef(null);
+
+    /* ---- load the catalog once ---- */
+    useEffect(function () {
+      var cancelled = false;
+      resolveCatalog(SONGS, function (done, total) {
+        if (!cancelled) setProgress({ done: done, total: total });
+      }).then(function (res) {
+        if (cancelled) return;
+        setTracks(res.tracks);
+        setOffline(res.offline || Object.keys(res.tracks).length === 0);
+        setPhase("start");
+      });
+      return function () { cancelled = true; };
+    }, []);
+
+    /* ---- pick the player once we know whether we have a network ---- */
+    function player() {
+      if (!playerRef.current) {
+        playerRef.current = offline || Object.keys(tracks).length === 0
+          ? makeSynthPlayer()
+          : makeAudioPlayer(audioRef.current);
+      }
+      return playerRef.current;
+    }
+
+    // Songs whose preview never resolved are skipped gracefully - they stay in
+    // the autocomplete list (so the answer space is stable) but are never the
+    // answer. Offline, everything is playable via the synth.
+    var pool = useMemo(function () {
+      if (offline) return SONGS;
+      return SONGS.filter(function (s) { return tracks[s.title]; });
+    }, [tracks, offline]);
+
+    var attempt = guesses.length;
+    var limit = STEPS[Math.min(attempt, MAX_ATTEMPTS - 1)];
+    var over = phase === "won" || phase === "lost";
+    var unlocked = over ? 1 : (Math.min(attempt, MAX_ATTEMPTS - 1) + 1) / 6;
+
+    var shape = useMemo(function () {
+      return waveShape(song ? seedFrom(song.title) : 1);
+    }, [song]);
+
+    var track = song ? tracks[song.title] : null;
+
+    /* ---- round control ---- */
+
+    var startRound = useCallback(function (currentPlayed) {
+      var seen = currentPlayed || played;
+      var fresh = pool.filter(function (s) { return seen.indexOf(s.title) === -1; });
+      var from = fresh.length ? fresh : pool;
+      if (!from.length) return;
+      var next = from[Math.floor(Math.random() * from.length)];
+
+      if (playerRef.current) playerRef.current.stop();
+      setSong(next);
+      setGuesses([]);
+      setText("");
+      setPos(0);
+      setAudioErr("");
+      setPhase("play");
+      setPlayed(fresh.length ? seen.concat([next.title]) : [next.title]);
+
+      var t = tracks[next.title] || { seed: seedFrom(next.title) };
+      t.seed = seedFrom(next.title);
+      player().load(t);
+    }, [pool, played, tracks, offline]);
+
+    function playSnippet(span) {
+      var p = player();
+      if (busy) { p.stop(); setBusy(false); setPos(0); return; }
+      setAudioErr("");
+      setBusy(true);
+      p.play(span, {
+        onTick: function (t) { setPos(t); },
+        onEnd: function () { setBusy(false); setPos(0); }
+      }).catch(function (err) {
+        setBusy(false);
+        setPos(0);
+        // Autoplay policy is not a concern (every play is a click), but a dead
+        // CDN or a dropped connection is.
+        setAudioErr(err && err.name === "NotAllowedError"
+          ? "Your browser blocked playback. Tap play once more."
+          : "That preview would not load. Try skipping to the next song.");
+      });
+    }
+
+    function finish(won, list) {
+      setGuesses(list);
+      setPhase(won ? "won" : "lost");
+      setScore(function (s) { return { won: s.won + (won ? 1 : 0), total: s.total + 1 }; });
+      player().stop();
+      setBusy(false);
+      setPos(0);
+    }
+
+    function submitGuess(picked) {
+      if (over || !song) return;
+      var right = norm(picked.title) === norm(song.title);
+      var list = guesses.concat([{ type: right ? "correct" : "wrong", title: picked.title }]);
+      setText("");
+      if (right) return finish(true, list);
+      if (list.length >= MAX_ATTEMPTS) return finish(false, list);
+      setGuesses(list);
+      player().stop();
+      setBusy(false);
+      setPos(0);
+    }
+
+    function skip() {
+      if (over || !song) return;
+      var list = guesses.concat([{ type: "skip" }]);
+      setText("");
+      if (list.length >= MAX_ATTEMPTS) return finish(false, list);
+      setGuesses(list);
+      player().stop();
+      setBusy(false);
+      setPos(0);
+    }
+
+    /* ---- derived UI values ---- */
+
+    var headFrac = 0;
+    if (busy && pos > 0) {
+      headFrac = over
+        ? Math.min(1, pos / (player().duration() || 30))
+        : Math.min(unlocked, unlocked * (pos / limit));
+    }
+
+    var skipLabel = attempt >= MAX_ATTEMPTS - 1
+      ? "Give up"
+      : "Skip +" + label(STEPS[attempt + 1] - STEPS[attempt]);
+
+    /* ---- screens ---- */
+
+    function Masthead() {
+      return h("header", { className: "masthead" },
+        h("div", null,
+          h("h1", { className: "wordmark" }, "Fil", h("em", null, "mi")),
+          h("p", { className: "tagline" }, "Guess the Bollywood song")
+        ),
+        h("div", {
+          style: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "7px" }
+        },
+          offline ? h("span", {
+            className: "demochip",
+            title: "Apple's previews are unreachable here, so the audio is synthesised"
+          }, "Demo audio") : null,
+          score.total > 0
+            ? h("div", { className: "scoreline" },
+                h("b", null, score.won), " / ", score.total, h("br"), "this session")
+            : null
+        )
+      );
+    }
+
+    // The <audio> element is mounted once, above the phase switch. If it were
+    // rendered inside each screen it would sit at a different position in each
+    // tree and React would remount it on every phase change - which drops the
+    // src and leaves the player holding a detached node.
+    function frame(content) {
+      return h(React.Fragment, null,
+        h("audio", { ref: audioRef, preload: "auto" }),
+        content);
+    }
+
+    function Foot() {
+      return h("footer", { className: "foot" },
+        h("div", null, "Audio previews and artwork supplied by the Apple iTunes Search API."),
+        h("div", null, "Not affiliated with Apple. All songs belong to their respective rights holders.")
+      );
+    }
+
+    if (phase === "loading") {
+      var pct = progress.total ? Math.round((progress.done / progress.total) * 100) : 0;
+      return frame(h("div", { className: "shell" },
+        Masthead(),
+        h("div", { className: "loading" },
+          h("div", { className: "loading-label" }, "Resolving previews"),
+          h("div", { className: "meter" }, h("div", { className: "meter-fill", style: { width: pct + "%" } })),
+          h("div", { className: "loading-label" }, progress.done + " / " + progress.total)
+        ),
+        Foot()
+      ));
+    }
+
+    if (phase === "start") {
+      return frame(h("div", { className: "shell" },
+        Masthead(),
+        offline ? h("div", { className: "notice" },
+          h("b", null, "No real songs here."), " Apple's preview servers are unreachable from this page, so every round runs on generated stand-in audio. The interface is fully playable, but the clips are not the actual recordings. ",
+          h("b", null, "To hear the real Hindi songs,"), " open the ", h("code", null, "bollywood-heardle.html"),
+          " file straight from your computer — same game, real 30-second previews."
+        ) : null,
+        h("div", { className: "start" },
+          h("p", { className: "start-lede" },
+            "You get half a second of a Hindi film song. Name it. Every miss or skip buys you a little more."),
+          h("div", { className: "start-steps" }, STEPS.map(function (s) {
+            return h("span", { key: s }, label(s));
+          })),
+          h("button", {
+            className: "btn btn-primary",
+            style: { padding: "16px 34px", fontSize: "15px", marginTop: "8px" },
+            onClick: function () { startRound([]); }
+          }, "Endless / Random"),
+          h("div", { className: "loading-label" }, pool.length + " songs in the catalog")
+        ),
+        Foot()
+      ));
+    }
+
+    /* ---- reveal ---- */
+    if (over) {
+      var appleUrl = (track && track.trackViewUrl)
+        || (song.trackId ? "https://music.apple.com/in/song/" + song.trackId : null);
+
+      return frame(h("div", { className: "shell" },
+        Masthead(),
+        h("div", { className: "reveal" },
+          h("div", { className: "verdict " + (phase === "won" ? "win" : "lose") },
+            phase === "won"
+              ? "Correct in " + guesses.length + (guesses.length === 1 ? " guess" : " guesses")
+              : "Out of guesses — the song was"),
+
+          h("div", { className: "card" },
+            track && track.artwork
+              ? h("img", { className: "cover", src: track.artwork, alt: song.title + " cover art" })
+              : h("div", {
+                  className: "cover",
+                  style: {
+                    background: "linear-gradient(145deg, hsl(" + (seedFrom(song.title) % 360) + " 42% 26%), var(--ink-4))"
+                  }
+                }, song.title.slice(0, 1).toUpperCase()),
+            h("div", { className: "card-meta" },
+              h("h2", { className: "card-title" }, song.title),
+              h("div", { className: "card-artist" }, song.artist),
+              h("div", { className: "card-movie" }, song.movie)
+            )
+          ),
+
+          h("div", { className: "fullplayer" },
+            h("button", {
+              className: "mini-play",
+              "aria-label": busy ? "Stop" : "Play the full preview",
+              onClick: function () { playSnippet(null); }
+            }, busy ? h(IconStop, { size: 17 }) : h(IconPlay, { size: 17 })),
+            h("div", { className: "scrub" },
+              h("div", {
+                className: "scrub-fill",
+                style: { width: (headFrac * 100) + "%" }
+              })),
+            h("div", { className: "clock" }, fmt(pos) + " / " + fmt(player().duration()))
+          ),
+
+          audioErr ? h("div", { className: "notice bad" }, audioErr) : null,
+
+          offline ? h("div", { className: "notice" },
+            h("b", null, "You heard stand-in audio, not the song."),
+            " Apple's previews are unreachable from here, so the clip was generated. The link below plays the real recording."
+          ) : null,
+
+          // Apple requires the track link to be shown wherever their previews
+          // are used, so this is never conditional on the round's outcome.
+          appleUrl ? h("a", {
+            className: "applelink",
+            href: appleUrl,
+            target: "_blank",
+            rel: "noopener noreferrer"
+          }, h(IconApple), "Listen on Apple Music") : null,
+
+          h("div", { className: "rows" }, guesses.map(function (g, i) {
+            return h("div", {
+              key: i,
+              className: "row row-" + g.type
+            },
+              h("span", { className: "row-text" }, g.type === "skip" ? "Skipped" : g.title),
+              h("span", { className: "row-tag" }, label(STEPS[i]))
+            );
+          })),
+
+          h("button", {
+            className: "btn btn-primary",
+            onClick: function () { startRound(played); }
+          }, "Next song")
+        ),
+        Foot()
+      ));
+    }
+
+    /* ---- active round ---- */
+    return frame(h("div", { className: "shell" },
+      Masthead(),
+
+      h("div", { className: "rows" },
+        Array.apply(null, Array(MAX_ATTEMPTS)).map(function (_, i) {
+          var g = guesses[i];
+          if (!g) {
+            return h("div", { key: i, className: "row row-empty" },
+              h("span", { className: "row-text" }, ""),
+              h("span", { className: "row-tag" }, label(STEPS[i])));
+          }
+          return h("div", { key: i, className: "row row-" + g.type },
+            h("span", { className: "row-text" }, g.type === "skip" ? "Skipped" : g.title),
+            h("span", { className: "row-tag" }, label(STEPS[i])));
+        })
+      ),
+
+      h("div", { className: "stage" },
+        h(Waveform, { shape: shape, unlocked: unlocked, head: headFrac }),
+        h("div", { className: "ticks" }, STEPS.map(function (s, i) {
+          var on = i <= attempt;
+          var now = i === attempt;
+          return h("div", {
+            key: s,
+            className: "tick" + (on ? " is-on" : "") + (now ? " is-now" : "")
+          }, label(s));
+        }))
+      ),
+
+      h("div", { className: "transport" },
+        h("div", { className: "transport-meta", style: { textAlign: "right" } },
+          h("b", null, label(limit)), "unlocked"),
+        h("button", {
+          className: "play" + (!busy ? " is-idle" : ""),
+          "aria-label": busy ? "Stop playback" : "Play " + label(limit) + " of the song",
+          onClick: function () { playSnippet(limit); }
+        }, busy ? h(IconStop, null) : h(IconPlay, null)),
+        h("div", { className: "transport-meta" },
+          h("b", null, MAX_ATTEMPTS - attempt), "left")
+      ),
+
+      audioErr ? h("div", { className: "notice bad" }, audioErr) : null,
+
+      h(Typeahead, {
+        songs: SONGS,
+        text: text,
+        setText: setText,
+        disabled: false,
+        onSubmit: submitGuess,
+        onSkip: skip,
+        skipLabel: skipLabel
+      }),
+
+      Foot()
+    ));
+  }
+
+  ReactDOM.createRoot(document.getElementById("root")).render(h(App));
+})();
+</script>
