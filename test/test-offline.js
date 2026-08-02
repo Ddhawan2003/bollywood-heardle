@@ -11,7 +11,7 @@ const appStart = html.lastIndexOf('<script>', marker) + 8;
 let appSrc = html.slice(appStart, html.indexOf('</script>', appStart));
 appSrc = appSrc.replace(
   'ReactDOM.createRoot(document.getElementById("root")).render(h(App));',
-  'window.__T = { resolveCatalog, jsonpProbe: jsonp };'
+  'window.__T = { resolveCatalog, jsonpProbe: jsonp, CATALOG };'
 );
 
 const sandbox = {
@@ -50,7 +50,7 @@ const ok = (n, c, x) => { c ? (pass++, console.log('  PASS  ' + n)) : (fail++, c
 
 console.log('\n--- blocked network (Artifact CSP simulation) ---');
 const t0 = Date.now();
-sandbox.__T.resolveCatalog(sandbox.BOLLYWOOD_SONGS, () => {}).then(res => {
+sandbox.__T.resolveCatalog(sandbox.__T.CATALOG, () => {}).then(res => {
   const ms = Date.now() - t0;
   ok('resolves rather than hanging', true);
   ok('flagged offline', res.offline === true);
@@ -63,7 +63,9 @@ sandbox.__T.resolveCatalog(sandbox.BOLLYWOOD_SONGS, () => {}).then(res => {
   ok('demo mode engaged', demoMode === true);
 
   // catalog must remain fully playable via the synth so the UI is explorable
-  ok('full catalog stays in the pool offline', sandbox.BOLLYWOOD_SONGS.length === 18);
+  ok('full catalog stays in the pool offline', sandbox.__T.CATALOG.length === 18);
+  ok('every song still has an identity offline',
+     sandbox.__T.CATALOG.every((s, i) => s.uid === i));
 
   // every song still yields a valid Apple Music attribution link from trackId
   const links = sandbox.BOLLYWOOD_SONGS.map(s => 'https://music.apple.com/in/song/' + s.trackId);

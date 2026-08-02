@@ -20,7 +20,8 @@ let appSrc = html.slice(appStart, appEnd);
 // expose internals for assertions
 appSrc = appSrc.replace(
   'ReactDOM.createRoot(document.getElementById("root")).render(h(App));',
-  'window.__T = { norm, scoreResult, chunk, waveShape, label, fmt, seedFrom, resolveCatalog, STEPS, MAX_ATTEMPTS, WAVE_BARS };'
+  'window.__T = { norm, scoreResult, chunk, waveShape, label, fmt, seedFrom, songSeed,' +
+  ' buildCatalog, ambiguousTitles, resolveCatalog, CATALOG, STEPS, MAX_ATTEMPTS, WAVE_BARS };'
 );
 
 function get(url) {
@@ -82,6 +83,8 @@ vm.runInContext(appSrc, ctx);
 
 const T = sandbox.__T;
 const SONGS = sandbox.BOLLYWOOD_SONGS;
+const CATALOG = T.CATALOG;
+const uidOf = title => CATALOG.find(s => s.title === title).uid;
 
 let pass = 0, fail = 0;
 function ok(name, cond, extra) {
@@ -94,6 +97,28 @@ ok('18 songs', SONGS.length === 18, SONGS.length);
 ok('every song has title/artist/movie', SONGS.every(s => s.title && s.artist && s.movie));
 ok('titles unique', new Set(SONGS.map(s => s.title)).size === SONGS.length);
 ok('every seed song pinned to a trackId', SONGS.every(s => typeof s.trackId === 'number'));
+
+console.log('\n--- identity (nothing may key off a title) ---');
+ok('catalog gets a uid per song', CATALOG.length === SONGS.length &&
+   CATALOG.every((s, i) => s.uid === i));
+ok('uids are unique', new Set(CATALOG.map(s => s.uid)).size === CATALOG.length);
+ok('normalised forms precomputed', CATALOG.every(s => s.nTitle === T.norm(s.title) &&
+   s.nMovie === T.norm(s.movie)));
+ok('seed songs carry no ambiguous title', Object.keys(T.ambiguousTitles(CATALOG)).length === 0);
+
+// The failure this whole scheme exists to prevent: one title, two films.
+const collide = T.buildCatalog([
+  { title: 'Tere Bina', artist: 'A.R. Rahman', movie: 'Guru' },
+  { title: 'Tere Bina', artist: 'Chitra', movie: 'Bombay' },
+  { title: 'Kesariya', artist: 'Arijit Singh', movie: 'Brahmastra' },
+]);
+ok('same title in two films gets two uids', collide[0].uid !== collide[1].uid);
+ok('duplicate title flagged as ambiguous', T.ambiguousTitles(collide)['tere bina'] === true);
+ok('unique title not flagged', T.ambiguousTitles(collide)['kesariya'] === undefined);
+ok('guess compare by uid says these two differ', collide[0].uid !== collide[1].uid &&
+   collide[0].nTitle === collide[1].nTitle);
+ok('same-title songs get different waveform seeds',
+   T.songSeed(collide[0]) !== T.songSeed(collide[1]));
 
 console.log('\n--- rules ---');
 ok('steps are 0.5,1,2,4,8,16', T.STEPS.join(',') === '0.5,1,2,4,8,16');
@@ -146,28 +171,35 @@ ok('unlock fraction grows monotonically', [0,1,2,3,4,5].every((n,i,a) => i===0 |
 ok('final attempt unlocks the full 16s', T.STEPS[5] === 16 && unlockAt(5) === 1);
 
 console.log('\n--- live iTunes resolution via JSONP ---');
-T.resolveCatalog(SONGS, () => {}).then(res => {
-  const names = Object.keys(res.tracks);
+T.resolveCatalog(CATALOG, () => {}).then(res => {
+  const keys = Object.keys(res.tracks);
   ok('not flagged offline', res.offline === false);
-  ok('all 18 resolved', names.length === 18, names.length);
+  ok('all 18 resolved', keys.length === 18, keys.length);
+  // The bug this guards: keying the preview cache by title. Every key must be a
+  // uid, so the lookups in the app (tracks[song.uid]) actually hit.
+  ok('cache keyed by uid, not title',
+     keys.every(k => CATALOG.some(s => String(s.uid) === k)), keys.slice(0, 3).join(','));
+  ok('every catalog song has a cache entry',
+     CATALOG.every(s => res.tracks[s.uid]));
   ok('single batched lookup request', jsonpCalls.length === 1, jsonpCalls.length + ' calls');
   ok('callback param appended (JSONP)', jsonpCalls[0].includes('callback=__itunes_cb_'));
 
-  const missingPrev = names.filter(n => !res.tracks[n].previewUrl);
+  const missingPrev = keys.filter(k => !res.tracks[k].previewUrl);
   ok('every track has a previewUrl', missingPrev.length === 0, missingPrev.join(','));
-  const missingView = names.filter(n => !res.tracks[n].trackViewUrl);
+  const missingView = keys.filter(k => !res.tracks[k].trackViewUrl);
   ok('every track has trackViewUrl (Apple attribution)', missingView.length === 0, missingView.join(','));
-  const missingArt = names.filter(n => !res.tracks[n].artwork);
+  const missingArt = keys.filter(k => !res.tracks[k].artwork);
   ok('every track has artwork', missingArt.length === 0, missingArt.join(','));
-  ok('artwork upgraded to 600x600', res.tracks['Kesariya'].artwork.includes('600x600'));
-  ok('previews are m4a', names.every(n => res.tracks[n].previewUrl.includes('.m4a')));
+  ok('artwork upgraded to 600x600', res.tracks[uidOf('Kesariya')].artwork.includes('600x600'));
+  ok('previews are m4a', keys.every(k => res.tracks[k].previewUrl.includes('.m4a')));
 
-  const bad = names.filter(n => /remix|unplugged|karaoke|cover/i.test(res.tracks[n].itunesTitle));
-  ok('no remix/cover slipped into the catalog', bad.length === 0, bad.join(','));
+  const bad = keys.filter(k => /remix|unplugged|karaoke|cover/i.test(res.tracks[k].itunesTitle));
+  ok('no remix/cover slipped into the catalog', bad.length === 0,
+     bad.map(k => res.tracks[k].itunesTitle).join(','));
 
   console.log('\n  resolved sample:');
   ['Tum Hi Ho', 'Senorita', 'Nagada Sang Dhol'].forEach(n => {
-    const t = res.tracks[n];
+    const t = res.tracks[uidOf(n)];
     console.log('    ' + n + ' -> ' + t.itunesTitle + ' | ' + t.itunesAlbum);
   });
 

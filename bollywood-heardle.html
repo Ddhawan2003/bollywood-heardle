@@ -1136,8 +1136,9 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
     }
 
     // Pinned ids resolve in bulk - /lookup accepts comma-separated ids, so the
-    // 18 seed songs cost a single request.
-    var jobs = chunk(pinned, 20).map(function (group) {
+    // whole seed catalog costs a single request. 200 per batch is measured, not
+    // guessed: 200 ids is a ~2.2KB URL and Apple returns all 200.
+    var jobs = chunk(pinned, 200).map(function (group) {
       var ids = group.map(function (s) { return s.trackId; }).join(",");
       return jsonp("https://itunes.apple.com/lookup?id=" + ids + "&country=IN")
         .then(function (data) {
@@ -1145,7 +1146,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
           (data.results || []).forEach(function (r) { byId[r.trackId] = r; });
           group.forEach(function (s) {
             var r = byId[s.trackId];
-            if (r && r.previewUrl) tracks[s.title] = toTrack(r);
+            if (r && r.previewUrl) tracks[s.uid] = toTrack(r);
           });
           bump(group.length);
         });
@@ -1163,7 +1164,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
             var sc = scoreResult(r, s);
             if (sc > bestScore) { bestScore = sc; best = r; }
           });
-          if (best && best.previewUrl) tracks[s.title] = toTrack(best);
+          if (best && best.previewUrl) tracks[s.uid] = toTrack(best);
           bump(1);
         }).catch(function () { bump(1); })   // one dud song must not sink the set
       );
@@ -1331,11 +1332,48 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
       .toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
   }
 
+  // Gives every song a stable identity and precomputes the normalised forms the
+  // typeahead needs on each keystroke.
+  //
+  // Titles are NOT unique in Hindi film music - Tere Bina, Zaalima, Bekhayali
+  // and Tum Hi Ho each exist in more than one film - so nothing downstream may
+  // key off the title. Doing so would both collide in the preview cache and
+  // mark a player correct for naming a different film's song of the same name.
+  // uid is the catalog index: stable for a session, and free.
+  function buildCatalog(raw) {
+    return (raw || []).map(function (s, i) {
+      return {
+        uid: i,
+        title: s.title,
+        artist: s.artist,
+        movie: s.movie,
+        term: s.term,
+        trackId: s.trackId,
+        nTitle: norm(s.title),
+        nMovie: norm(s.movie)
+      };
+    });
+  }
+
+  // Titles appearing more than once, so the UI can disambiguate by film.
+  function ambiguousTitles(catalog) {
+    var seen = {}, dupes = {};
+    catalog.forEach(function (s) {
+      if (seen[s.nTitle]) dupes[s.nTitle] = true;
+      seen[s.nTitle] = true;
+    });
+    return dupes;
+  }
+
   function seedFrom(str) {
     var s = 0;
     for (var i = 0; i < str.length; i++) s = (s * 31 + str.charCodeAt(i)) >>> 0;
     return s || 1;
   }
+
+  // Title + film, never title alone: two songs sharing a title must not share a
+  // waveform, a placeholder cover or a synth phrase.
+  function songSeed(song) { return seedFrom(song.nTitle + "|" + song.nMovie); }
 
   function waveShape(seed) {
     var s = seed >>> 0 || 1;
@@ -1386,16 +1424,21 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
     var text = props.text, setText = props.setText;
     var [open, setOpen] = useState(false);
     var [active, setActive] = useState(0);
+    // The exact song chosen from the list, remembered by identity. Typing alone
+    // cannot disambiguate two films that share a title, so a click/Enter on a
+    // row is what pins which one the player means.
+    var [picked, setPicked] = useState(null);
     var wrapRef = useRef(null);
 
+    // nTitle/nMovie are precomputed at load, so a keystroke is a string scan
+    // and not a normalize("NFD") over the whole catalog.
     var matches = useMemo(function () {
       var q = norm(text);
       if (!q) return songs.slice(0, 60);
       var starts = [], contains = [];
       songs.forEach(function (s) {
-        var t = norm(s.title), m = norm(s.movie);
-        if (t.indexOf(q) === 0) starts.push(s);
-        else if (t.indexOf(q) !== -1 || m.indexOf(q) !== -1) contains.push(s);
+        if (s.nTitle.indexOf(q) === 0) starts.push(s);
+        else if (s.nTitle.indexOf(q) !== -1 || s.nMovie.indexOf(q) !== -1) contains.push(s);
       });
       return starts.concat(contains).slice(0, 60);
     }, [text, songs]);
@@ -1411,16 +1454,26 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
       return function () { document.removeEventListener("mousedown", onDoc); };
     }, []);
 
-    // Only a title that exists in the catalog can be submitted, so a typo can
-    // never burn one of the six attempts.
-    var exact = useMemo(function () {
+    // Only a song that exists in the catalog can be submitted, so a typo can
+    // never burn one of the six attempts. Resolves to a song OBJECT, not a
+    // title: submitting has to name one specific track.
+    var choice = useMemo(function () {
       var q = norm(text);
       if (!q) return null;
-      for (var i = 0; i < songs.length; i++) if (norm(songs[i].title) === q) return songs[i];
-      return null;
-    }, [text, songs]);
+      if (picked && picked.nTitle === q) return picked;
+      // Typed by hand: only accept it when exactly one song carries that title.
+      // If two films share it, the player has to choose a row so we know which.
+      var hit = null;
+      for (var i = 0; i < songs.length; i++) {
+        if (songs[i].nTitle !== q) continue;
+        if (hit) return null;
+        hit = songs[i];
+      }
+      return hit;
+    }, [text, songs, picked]);
 
     function choose(song) {
+      setPicked(song);
       setText(song.title);
       setOpen(false);
     }
@@ -1436,7 +1489,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
       } else if (e.key === "Enter") {
         e.preventDefault();
         if (open && matches[active]) choose(matches[active]);
-        else if (exact) onSubmit(exact);
+        else if (choice) onSubmit(choice);
       } else if (e.key === "Escape") {
         setOpen(false);
       }
@@ -1453,7 +1506,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
             ? h("li", { className: "listbox-empty" }, "No song in the list matches that")
             : matches.map(function (s, i) {
                 return h("li", {
-                  key: s.title,
+                  key: s.uid,
                   role: "option",
                   "aria-selected": i === active,
                   className: "option" + (i === active ? " is-active" : ""),
@@ -1487,8 +1540,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
         }, props.skipLabel),
         h("button", {
           className: "btn btn-primary btn-submit",
-          disabled: disabled || !exact,
-          onClick: function () { if (exact) onSubmit(exact); }
+          disabled: disabled || !choice,
+          onClick: function () { if (choice) onSubmit(choice); }
         }, "Submit guess")
       )
     );
@@ -1519,8 +1572,19 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
   /* App                                                                 */
   /* ------------------------------------------------------------------ */
 
+  // Built once, at load: the raw array from the top of the file with ids and
+  // normalised forms attached. Everything below keys off uid, never title.
+  var CATALOG = buildCatalog(window.BOLLYWOOD_SONGS);
+  var DUPE_TITLES = ambiguousTitles(CATALOG);
+
+  // A guess row has to say which film when the title alone is ambiguous,
+  // otherwise a wrong answer reads as though it were the right one.
+  function guessLabel(song) {
+    return DUPE_TITLES[song.nTitle] ? song.title + " · " + song.movie : song.title;
+  }
+
   function App() {
-    var SONGS = window.BOLLYWOOD_SONGS || [];
+    var SONGS = CATALOG;
 
     var [phase, setPhase] = useState("loading");   // loading | start | play | won | lost
     var [tracks, setTracks] = useState({});
@@ -1569,7 +1633,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
     // answer. Offline, everything is playable via the synth.
     var pool = useMemo(function () {
       if (offline) return SONGS;
-      return SONGS.filter(function (s) { return tracks[s.title]; });
+      return SONGS.filter(function (s) { return tracks[s.uid]; });
     }, [tracks, offline]);
 
     var attempt = guesses.length;
@@ -1578,16 +1642,16 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
     var unlocked = over ? 1 : (Math.min(attempt, MAX_ATTEMPTS - 1) + 1) / 6;
 
     var shape = useMemo(function () {
-      return waveShape(song ? seedFrom(song.title) : 1);
+      return waveShape(song ? songSeed(song) : 1);
     }, [song]);
 
-    var track = song ? tracks[song.title] : null;
+    var track = song ? tracks[song.uid] : null;
 
     /* ---- round control ---- */
 
     var startRound = useCallback(function (currentPlayed) {
       var seen = currentPlayed || played;
-      var fresh = pool.filter(function (s) { return seen.indexOf(s.title) === -1; });
+      var fresh = pool.filter(function (s) { return seen.indexOf(s.uid) === -1; });
       var from = fresh.length ? fresh : pool;
       if (!from.length) return;
       var next = from[Math.floor(Math.random() * from.length)];
@@ -1599,10 +1663,16 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
       setPos(0);
       setAudioErr("");
       setPhase("play");
-      setPlayed(fresh.length ? seen.concat([next.title]) : [next.title]);
+      setPlayed(fresh.length ? seen.concat([next.uid]) : [next.uid]);
 
-      var t = tracks[next.title] || { seed: seedFrom(next.title) };
-      t.seed = seedFrom(next.title);
+      // The previous round may have been mid-playback - the reveal screen's
+      // full preview keeps running until something stops it. Stopping the
+      // player is not enough: busy has to come down with it, or the new round
+      // opens showing a stop button for audio that is not playing.
+      setBusy(false);
+
+      var t = tracks[next.uid] || {};
+      t.seed = songSeed(next);
       player().load(t);
     }, [pool, played, tracks, offline]);
 
@@ -1636,8 +1706,11 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 
     function submitGuess(picked) {
       if (over || !song) return;
-      var right = norm(picked.title) === norm(song.title);
-      var list = guesses.concat([{ type: right ? "correct" : "wrong", title: picked.title }]);
+      // Identity, not title. Hindi titles repeat across films (Tere Bina,
+      // Zaalima, Bekhayali), and naming a different film's song of the same
+      // name is a wrong answer, not a win.
+      var right = picked.uid === song.uid;
+      var list = guesses.concat([{ type: right ? "correct" : "wrong", title: guessLabel(picked) }]);
       setText("");
       if (right) return finish(true, list);
       if (list.length >= MAX_ATTEMPTS) return finish(false, list);
@@ -1768,7 +1841,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
               : h("div", {
                   className: "cover",
                   style: {
-                    background: "linear-gradient(145deg, hsl(" + (seedFrom(song.title) % 360) + " 42% 26%), var(--ink-4))"
+                    background: "linear-gradient(145deg, hsl(" + (songSeed(song) % 360) + " 42% 26%), var(--ink-4))"
                   }
                 }, song.title.slice(0, 1).toUpperCase()),
             h("div", { className: "card-meta" },

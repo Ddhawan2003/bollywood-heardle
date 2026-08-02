@@ -89,4 +89,5 @@ if ($Verify) {
     Write-Host ''
     node (Join-Path $root 'test\test.js')
     node (Join-Path $root 'test\test-offline.js')
+    node (Join-Path $root 'test\test-ui.js')
 }

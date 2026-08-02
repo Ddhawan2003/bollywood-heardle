@@ -37,7 +37,8 @@ offset ~1700, deliberately above the vendor blobs so it stays easy to find):
 { title: "Kesariya", artist: "Arijit Singh", movie: "Brahmastra", trackId: 1648663570 },
 ```
 
-`trackId` is optional but strongly recommended. **Filmi search is dirty** and a
+Order matters only in that a song's position is its `uid` for the session;
+appending is always safe. `trackId` is optional but strongly recommended. **Filmi search is dirty** and a
 plain term search regularly returns the wrong recording:
 
 - *Tum Hi Ho* has a **remix** ranked directly behind the original.
@@ -62,10 +63,14 @@ pwsh build/build.ps1 -Verify   # build, then run both suites
 ```
 
 ```
-test/test.js           34 checks — rules, normalisation, variant scoring,
-                       simulated games, and a LIVE iTunes resolution over JSONP
-test/test-offline.js    8 checks — simulates a CSP refusal; asserts the app
+test/test.js           45 checks — rules, normalisation, song identity, variant
+                       scoring, simulated games, and a LIVE iTunes resolution
+                       over JSONP
+test/test-offline.js    9 checks — simulates a CSP refusal; asserts the app
                        degrades in under 2s instead of hanging
+test/test-ui.js        21 checks — drives the real App component through a
+                       round against a hand-rolled React, on a fixture catalog
+                       with a deliberate title collision
 ```
 
 `test.js` hits the real API, so it needs a network connection and will fail if
@@ -89,20 +94,24 @@ Apple's terms require the track link wherever their previews are used, so
 `trackViewUrl` is rendered as "Listen on Apple Music" on every reveal,
 win or lose.
 
-## Known issues
+## Song identity
 
-**Guesses are compared by title, not by track id.** In `submitGuess` the check is
-`norm(picked.title) === norm(song.title)`. Hindi titles collide across films
-(*Tere Bina*, *Zaalima*, *Bekhayali*), so at catalog scale you could be marked
-correct for naming a **different film's song of the same name**. Harmless with 18
-curated entries; must be fixed before the catalog grows.
+Nothing keys off a title. `buildCatalog()` stamps every entry with a `uid` (its
+catalog index) and precomputed `nTitle` / `nMovie`, and the preview cache, the
+played-set, the waveform seed and the win check all use `uid`.
+
+This matters because Hindi titles collide across films — *Tere Bina*, *Zaalima*,
+*Bekhayali* each exist in more than one. Keying by title would both collide in
+the preview cache and mark you correct for naming a **different film's song of
+the same name**. When a title is ambiguous the typeahead refuses a hand-typed
+answer and makes you pick a row (every row shows its film), and the guess row
+then reads `Tere Bina · Bombay` so a wrong answer cannot be mistaken for a win.
+
+## Known issues
 
 **The whole catalog resolves at load.** Fine for 18 songs in one batched request;
 wrong above a few hundred. Should become lazy — resolve the answer song plus a
 small prefetch, since autocomplete needs only baked titles and no network.
-
-**`norm()` runs per song per keystroke.** It calls `.normalize("NFD")` every
-time; at thousands of songs the normalised forms need precomputing once at load.
 
 ## Scaling notes
 
