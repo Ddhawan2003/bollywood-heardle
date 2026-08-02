@@ -594,7 +594,8 @@ button:disabled { cursor: not-allowed; }
   display: grid; place-items: center;
   flex-shrink: 0;
 }
-.mini-play:hover { background: rgba(242,169,59,0.24); }
+.mini-play:hover:not(:disabled) { background: rgba(242,169,59,0.24); }
+.mini-play:disabled { opacity: 0.4; border-color: var(--muted-2); color: var(--muted-2); }
 .scrub {
   flex: 1;
   height: 4px;
@@ -651,27 +652,8 @@ button:disabled { cursor: not-allowed; }
 }
 .notice.bad { border-left-color: var(--rose); }
 
-.loading {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--step-3);
-  text-align: center;
-}
-.meter {
-  width: 190px;
-  height: 3px;
-  background: var(--ink-3);
-  border-radius: 999px;
-  overflow: hidden;
-}
-.meter-fill {
-  height: 100%;
-  background: var(--marigold);
-  transition: width 260ms ease;
-}
+/* No load-time progress meter any more: previews resolve one round at a time,
+   so there is nothing to wait for before the start screen. */
 .loading-label {
   font-family: var(--font-mono);
   font-size: 11px;
@@ -1104,6 +1086,18 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
     return score;
   }
 
+  // Best of a fuzzy search's results, or null when none is usable. Shared by
+  // both resolution paths so a song resolved one at a time at runtime and a
+  // song verified in bulk by the test suite are judged by identical rules.
+  function pickBest(results, song) {
+    var best = null, bestScore = -Infinity;
+    (results || []).forEach(function (r) {
+      var sc = scoreResult(r, song);
+      if (sc > bestScore) { bestScore = sc; best = r; }
+    });
+    return best && best.previewUrl ? best : null;
+  }
+
   function toTrack(r) {
     return {
       previewUrl: r.previewUrl,
@@ -1121,8 +1115,43 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
     return out;
   }
 
-  // Resolves every song's previewUrl once, at load, and hands back a map that
-  // the session then reuses. Returns { tracks, offline }.
+  // One song, one request - the runtime path. A round needs exactly one
+  // previewUrl, so resolving the whole catalog to play a single song is work
+  // that scales with the catalog for no gain.
+  //
+  // Returns { track } - track is null when the song simply has nothing usable
+  // behind it - or { offline: true } when the REQUEST failed. The distinction
+  // matters: a dud song costs that one song, a blocked request costs the
+  // network, and only the second may put the whole session into demo mode.
+  function resolveOne(song) {
+    var url = song.trackId
+      ? "https://itunes.apple.com/lookup?id=" + song.trackId + "&country=IN"
+      : "https://itunes.apple.com/search?term=" +
+        encodeURIComponent(song.term || (song.title + " " + song.artist + " " + song.movie)) +
+        "&entity=song&country=IN&limit=10";
+
+    return jsonp(url).then(function (data) {
+      var results = data.results || [];
+      if (song.trackId) {
+        for (var i = 0; i < results.length; i++) {
+          if (results[i].trackId === song.trackId && results[i].previewUrl) {
+            return { track: toTrack(results[i]) };
+          }
+        }
+        return { track: null };
+      }
+      var best = pickBest(results, song);
+      return { track: best ? toTrack(best) : null };
+    }).catch(function () {
+      return { track: null, offline: true };
+    });
+  }
+
+  // Every song in one pass, batched 200 ids to a request. This is NOT on the
+  // app's startup path any more - resolveOne is. It stays because it is the
+  // catalog verification gate: test.js runs it against the live API to prove
+  // every pinned trackId still resolves to a real preview, which costs two
+  // requests for a 300-song catalog. Returns { tracks, offline }.
   function resolveCatalog(songs, onProgress) {
     var tracks = {};
     var pinned = songs.filter(function (s) { return s.trackId; });
@@ -1159,12 +1188,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
                 "&entity=song&country=IN&limit=10";
       jobs.push(
         jsonp(url).then(function (data) {
-          var best = null, bestScore = -Infinity;
-          (data.results || []).forEach(function (r) {
-            var sc = scoreResult(r, s);
-            if (sc > bestScore) { bestScore = sc; best = r; }
-          });
-          if (best && best.previewUrl) tracks[s.uid] = toTrack(best);
+          var best = pickBest(data.results, s);
+          if (best) tracks[s.uid] = toTrack(best);
           bump(1);
         }).catch(function () { bump(1); })   // one dud song must not sink the set
       );
@@ -1586,12 +1611,12 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
   function App() {
     var SONGS = CATALOG;
 
-    var [phase, setPhase] = useState("loading");   // loading | start | play | won | lost
-    var [tracks, setTracks] = useState({});
+    var [phase, setPhase] = useState("start");     // start | play | won | lost
     var [offline, setOffline] = useState(false);
-    var [progress, setProgress] = useState({ done: 0, total: SONGS.length });
 
     var [song, setSong] = useState(null);
+    var [track, setTrack] = useState(null);        // the CURRENT round's preview
+    var [ready, setReady] = useState(false);       // its audio is loaded and playable
     var [guesses, setGuesses] = useState([]);
     var [text, setText] = useState("");
     var [played, setPlayed] = useState([]);
@@ -1604,37 +1629,81 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
     var audioRef = useRef(null);
     var playerRef = useRef(null);
 
-    /* ---- load the catalog once ---- */
-    useEffect(function () {
-      var cancelled = false;
-      resolveCatalog(SONGS, function (done, total) {
-        if (!cancelled) setProgress({ done: done, total: total });
-      }).then(function (res) {
-        if (cancelled) return;
-        setTracks(res.tracks);
-        setOffline(res.offline || Object.keys(res.tracks).length === 0);
-        setPhase("start");
-      });
-      return function () { cancelled = true; };
-    }, []);
+    // Resolved previews, uid -> track, or null for a song with nothing usable
+    // behind it. A ref, not state: the async round flow has to read it at the
+    // moment it asks, and nothing renders off the whole map any more - the
+    // reveal screen needs one track, and that one is held in state.
+    var cacheRef = useRef({});
+    var deadRef = useRef({});
+    var prefetchRef = useRef(null);   // { uid, promise } for the song we expect next
+    var offlineRef = useRef(false);   // readable from inside async closures
+    var roundRef = useRef(0);         // stale-resolve guard: newest round wins
 
-    /* ---- pick the player once we know whether we have a network ---- */
-    function player() {
-      if (!playerRef.current) {
-        playerRef.current = offline || Object.keys(tracks).length === 0
-          ? makeSynthPlayer()
-          : makeAudioPlayer(audioRef.current);
+    /* ---- resolution ---- */
+
+    function resolve(s) {
+      return resolveOne(s).then(function (res) {
+        if (res.offline) {
+          // The request itself failed, so nothing is reachable. Demo mode is a
+          // session-wide verdict; a song that merely has no preview is not.
+          offlineRef.current = true;
+          setOffline(true);
+          return null;
+        }
+        cacheRef.current[s.uid] = res.track;
+        if (!res.track) deadRef.current[s.uid] = true;
+        return res.track;
+      });
+    }
+
+    function trackFor(s) {
+      if (offlineRef.current) return Promise.resolve(null);
+      var cached = cacheRef.current[s.uid];
+      if (cached !== undefined) return Promise.resolve(cached);
+      var pre = prefetchRef.current;
+      if (pre && pre.uid === s.uid) return pre.promise;
+      return resolve(s);
+    }
+
+    // Resolve one song ahead while the player is busy guessing, so the next
+    // round opens on audio that is already loaded.
+    function prefetch(seen) {
+      if (offlineRef.current) return;
+      var fresh = SONGS.filter(function (s) {
+        return !deadRef.current[s.uid] &&
+               seen.indexOf(s.uid) === -1 &&
+               cacheRef.current[s.uid] === undefined;
+      });
+      if (!fresh.length) { prefetchRef.current = null; return; }
+      var pick = fresh[Math.floor(Math.random() * fresh.length)];
+      prefetchRef.current = { uid: pick.uid, promise: resolve(pick) };
+    }
+
+    // One song, before the player has clicked anything. This is the only
+    // request the page makes on its own, and it buys two things: the first
+    // round opens instantly, and demo mode is known in time for the badge to
+    // be on the start screen rather than appearing mid-round.
+    useEffect(function () { prefetch([]); }, []);
+
+    /* ---- the player follows the track, not the other way round ---- */
+
+    // Chosen per load, never memoised across rounds: with lazy resolution the
+    // first call happens before anything is known about the network, so a
+    // player picked once and kept would lock the whole session into whichever
+    // guess it made first.
+    function playerFor(t) {
+      var want = (t && t.previewUrl && audioRef.current) ? "audio" : "synth";
+      if (!playerRef.current || playerRef.current.kind !== want) {
+        if (playerRef.current) playerRef.current.stop();
+        playerRef.current = want === "audio" ? makeAudioPlayer(audioRef.current) : makeSynthPlayer();
       }
       return playerRef.current;
     }
 
-    // Songs whose preview never resolved are skipped gracefully - they stay in
-    // the autocomplete list (so the answer space is stable) but are never the
-    // answer. Offline, everything is playable via the synth.
-    var pool = useMemo(function () {
-      if (offline) return SONGS;
-      return SONGS.filter(function (s) { return tracks[s.uid]; });
-    }, [tracks, offline]);
+    function player() {
+      if (!playerRef.current) playerRef.current = makeSynthPlayer();
+      return playerRef.current;
+    }
 
     var attempt = guesses.length;
     var limit = STEPS[Math.min(attempt, MAX_ATTEMPTS - 1)];
@@ -1645,36 +1714,69 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
       return waveShape(song ? songSeed(song) : 1);
     }, [song]);
 
-    var track = song ? tracks[song.uid] : null;
-
     /* ---- round control ---- */
 
+    // The round is presented immediately and its audio arrives a moment later:
+    // a click must never wait on the network. Until it lands the transport is
+    // disabled, which is a state the player can see rather than a dead button.
     var startRound = useCallback(function (currentPlayed) {
-      var seen = currentPlayed || played;
-      var fresh = pool.filter(function (s) { return seen.indexOf(s.uid) === -1; });
-      var from = fresh.length ? fresh : pool;
-      if (!from.length) return;
-      var next = from[Math.floor(Math.random() * from.length)];
+      var token = ++roundRef.current;
 
-      if (playerRef.current) playerRef.current.stop();
-      setSong(next);
-      setGuesses([]);
-      setText("");
-      setPos(0);
-      setAudioErr("");
-      setPhase("play");
-      setPlayed(fresh.length ? seen.concat([next.uid]) : [next.uid]);
+      function deal(seen, triesLeft) {
+        var alive = SONGS.filter(function (s) { return !deadRef.current[s.uid]; });
+        var fresh = alive.filter(function (s) { return seen.indexOf(s.uid) === -1; });
+        var from = fresh.length ? fresh : alive;
+        if (!from.length) {
+          setAudioErr("No song in the catalog has a playable preview right now.");
+          return;
+        }
 
-      // The previous round may have been mid-playback - the reveal screen's
-      // full preview keeps running until something stops it. Stopping the
-      // player is not enough: busy has to come down with it, or the new round
-      // opens showing a stop button for audio that is not playing.
-      setBusy(false);
+        // Prefer the song already resolved in the background, when it is still
+        // a legal pick - that is the whole point of having prefetched it.
+        var pre = prefetchRef.current;
+        var next = null;
+        if (pre) {
+          for (var i = 0; i < from.length; i++) if (from[i].uid === pre.uid) { next = from[i]; break; }
+        }
+        if (!next) next = from[Math.floor(Math.random() * from.length)];
 
-      var t = tracks[next.uid] || {};
-      t.seed = songSeed(next);
-      player().load(t);
-    }, [pool, played, tracks, offline]);
+        if (playerRef.current) playerRef.current.stop();
+        setSong(next);
+        setTrack(null);
+        setReady(false);
+        setGuesses([]);
+        setText("");
+        setPos(0);
+        setAudioErr("");
+        setPhase("play");
+        setPlayed(fresh.length ? seen.concat([next.uid]) : [next.uid]);
+
+        // The previous round may have been mid-playback - the reveal screen's
+        // full preview keeps running until something stops it. Stopping the
+        // player is not enough: busy has to come down with it, or the new round
+        // opens showing a stop button for audio that is not playing.
+        setBusy(false);
+
+        trackFor(next).then(function (t) {
+          if (token !== roundRef.current) return;    // a newer round superseded us
+          // No preview and the network is fine means this one song is a dud:
+          // drop it for the session and deal another rather than stranding the
+          // player on a round they cannot hear.
+          if (!t && !offlineRef.current) {
+            deadRef.current[next.uid] = true;
+            if (triesLeft > 0) return deal(seen, triesLeft - 1);
+            setAudioErr("That preview would not load. Try skipping to the next song.");
+            return;
+          }
+          setTrack(t);
+          playerFor(t).load(t || { seed: songSeed(next) });
+          setReady(true);
+          prefetch(seen.concat([next.uid]));
+        });
+      }
+
+      deal(currentPlayed || played, 2);
+    }, [played]);
 
     function playSnippet(span) {
       var p = player();
@@ -1784,19 +1886,6 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
       );
     }
 
-    if (phase === "loading") {
-      var pct = progress.total ? Math.round((progress.done / progress.total) * 100) : 0;
-      return frame(h("div", { className: "shell" },
-        Masthead(),
-        h("div", { className: "loading" },
-          h("div", { className: "loading-label" }, "Resolving previews"),
-          h("div", { className: "meter" }, h("div", { className: "meter-fill", style: { width: pct + "%" } })),
-          h("div", { className: "loading-label" }, progress.done + " / " + progress.total)
-        ),
-        Foot()
-      ));
-    }
-
     if (phase === "start") {
       return frame(h("div", { className: "shell" },
         Masthead(),
@@ -1805,6 +1894,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
           h("b", null, "To hear the real Hindi songs,"), " open the ", h("code", null, "bollywood-heardle.html"),
           " file straight from your computer — same game, real 30-second previews."
         ) : null,
+        audioErr ? h("div", { className: "notice bad" }, audioErr) : null,
         h("div", { className: "start" },
           h("p", { className: "start-lede" },
             "You get half a second of a Hindi film song. Name it. Every miss or skip buys you a little more."),
@@ -1816,7 +1906,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
             style: { padding: "16px 34px", fontSize: "15px", marginTop: "8px" },
             onClick: function () { startRound([]); }
           }, "Endless / Random"),
-          h("div", { className: "loading-label" }, pool.length + " songs in the catalog")
+          h("div", { className: "loading-label" }, SONGS.length + " songs in the catalog")
         ),
         Foot()
       ));
@@ -1854,7 +1944,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
           h("div", { className: "fullplayer" },
             h("button", {
               className: "mini-play",
-              "aria-label": busy ? "Stop" : "Play the full preview",
+              disabled: !ready,
+              "aria-label": !ready ? "Loading the preview" : (busy ? "Stop" : "Play the full preview"),
               onClick: function () { playSnippet(null); }
             }, busy ? h(IconStop, { size: 17 }) : h(IconPlay, { size: 17 })),
             h("div", { className: "scrub" },
@@ -1934,8 +2025,11 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
         h("div", { className: "transport-meta", style: { textAlign: "right" } },
           h("b", null, label(limit)), "unlocked"),
         h("button", {
-          className: "play" + (!busy ? " is-idle" : ""),
-          "aria-label": busy ? "Stop playback" : "Play " + label(limit) + " of the song",
+          className: "play" + (!busy && ready ? " is-idle" : ""),
+          disabled: !ready,
+          "aria-label": !ready
+            ? "Loading the preview"
+            : (busy ? "Stop playback" : "Play " + label(limit) + " of the song"),
           onClick: function () { playSnippet(limit); }
         }, busy ? h(IconStop, null) : h(IconPlay, null)),
         h("div", { className: "transport-meta" },

@@ -11,7 +11,7 @@ const appStart = html.lastIndexOf('<script>', marker) + 8;
 let appSrc = html.slice(appStart, html.indexOf('</script>', appStart));
 appSrc = appSrc.replace(
   'ReactDOM.createRoot(document.getElementById("root")).render(h(App));',
-  'window.__T = { resolveCatalog, jsonpProbe: jsonp, CATALOG };'
+  'window.__T = { resolveCatalog, resolveOne, jsonpProbe: jsonp, CATALOG };'
 );
 
 const sandbox = {
@@ -48,9 +48,26 @@ vm.runInContext(appSrc, ctx);
 let pass = 0, fail = 0;
 const ok = (n, c, x) => { c ? (pass++, console.log('  PASS  ' + n)) : (fail++, console.log('  FAIL  ' + n + (x ? ' -> ' + x : ''))); };
 
-console.log('\n--- blocked network (Artifact CSP simulation) ---');
+console.log('\n--- blocked network, runtime path (one song at a time) ---');
+const t1 = Date.now();
+sandbox.__T.resolveOne(sandbox.__T.CATALOG[0]).then(one => {
+  ok('a single resolve settles rather than hanging', true);
+  ok('reports the REQUEST as failed, so demo mode is session-wide',
+     one.offline === true);
+  ok('no track handed back', one.track === null);
+  ok('fails fast (<2s, no 12s timeout wait)', Date.now() - t1 < 2000, (Date.now() - t1) + 'ms');
+  return catalogGate();
+}).catch(e => {
+  console.log('  FAIL  resolveOne threw instead of degrading: ' + e.message);
+  process.exit(1);
+});
+
+// resolveCatalog is off the startup path now, but it is the catalog
+// verification gate - it still has to degrade rather than hang.
+function catalogGate() {
+console.log('\n--- blocked network, verification gate (whole catalog) ---');
 const t0 = Date.now();
-sandbox.__T.resolveCatalog(sandbox.__T.CATALOG, () => {}).then(res => {
+return sandbox.__T.resolveCatalog(sandbox.__T.CATALOG, () => {}).then(res => {
   const ms = Date.now() - t0;
   ok('resolves rather than hanging', true);
   ok('flagged offline', res.offline === true);
@@ -58,12 +75,8 @@ sandbox.__T.resolveCatalog(sandbox.__T.CATALOG, () => {}).then(res => {
   ok('fails fast (<2s, no 12s timeout wait)', ms < 2000, ms + 'ms');
   ok('injected script tags cleaned up', cleanupSeen > 0, cleanupSeen);
 
-  // the app treats "offline OR nothing resolved" as demo mode
-  const demoMode = res.offline || Object.keys(res.tracks).length === 0;
-  ok('demo mode engaged', demoMode === true);
-
   // catalog must remain fully playable via the synth so the UI is explorable
-  ok('full catalog stays in the pool offline', sandbox.__T.CATALOG.length === 18);
+  ok('full catalog stays playable offline', sandbox.__T.CATALOG.length === 18);
   ok('every song still has an identity offline',
      sandbox.__T.CATALOG.every((s, i) => s.uid === i));
 
@@ -77,3 +90,4 @@ sandbox.__T.resolveCatalog(sandbox.__T.CATALOG, () => {}).then(res => {
   console.log('  FAIL  threw instead of degrading: ' + e.message);
   process.exit(1);
 });
+}

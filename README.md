@@ -63,14 +63,18 @@ pwsh build/build.ps1 -Verify   # build, then run both suites
 ```
 
 ```
-test/test.js           45 checks — rules, normalisation, song identity, variant
-                       scoring, simulated games, and a LIVE iTunes resolution
-                       over JSONP
-test/test-offline.js    9 checks — simulates a CSP refusal; asserts the app
-                       degrades in under 2s instead of hanging
-test/test-ui.js        21 checks — drives the real App component through a
-                       round against a hand-rolled React, on a fixture catalog
-                       with a deliberate title collision
+test/test.js           53 checks — rules, normalisation, song identity, variant
+                       scoring, simulated games, and LIVE iTunes resolution over
+                       JSONP: the whole catalog batched, and single songs by the
+                       runtime path
+test/test-offline.js   12 checks — simulates a CSP refusal; asserts both
+                       resolution paths degrade in under 2s instead of hanging
+test/test-ui.js        47 checks — drives the real App component through whole
+                       rounds against a hand-rolled React. Blocked scenario: a
+                       fixture catalog with a deliberate title collision.
+                       Online scenario: lookups answer for real and one song is
+                       deliberately preview-less, covering lazy resolution,
+                       prefetch, and the dud-song reroll
 ```
 
 `test.js` hits the real API, so it needs a network connection and will fail if
@@ -86,9 +90,21 @@ DOM/React globals, so they cannot drift from what ships.
 same-origin policy, so this works from `file://` and from any host. Verified:
 both `/search` and `/lookup` return `text/javascript` with the callback wrapper.
 
-All 18 pinned ids resolve in a **single** batched `/lookup` request. Snippet
-length is enforced by driving `currentTime` against a `requestAnimationFrame`
-loop and pausing at the limit.
+Previews resolve **one song at a time**, as rounds need them — a round needs one
+`previewUrl`, so resolving the catalog to play a single song is work that scales
+with the catalog for no gain. The page makes exactly one request on its own: a
+prefetch of one song at load, which makes the first round instant and settles
+whether we are in demo mode in time for the badge to be on the start screen.
+After that each round resolves the *next* song in the background while you
+guess, so the lookup is already done by the time you click "Next song".
+
+Cost is flat: **one small request per round**, no matter how big the catalog
+gets. A song that resolves but has no preview is marked dead and re-dealt; a
+request that *fails* is a different thing entirely and puts the session into
+demo mode.
+
+Snippet length is enforced by driving `currentTime` against a
+`requestAnimationFrame` loop and pausing at the limit.
 
 Apple's terms require the track link wherever their previews are used, so
 `trackViewUrl` is rendered as "Listen on Apple Music" on every reveal,
@@ -109,9 +125,9 @@ then reads `Tere Bina · Bombay` so a wrong answer cannot be mistaken for a win.
 
 ## Known issues
 
-**The whole catalog resolves at load.** Fine for 18 songs in one batched request;
-wrong above a few hundred. Should become lazy — resolve the answer song plus a
-small prefetch, since autocomplete needs only baked titles and no network.
+**The catalog is 18 songs.** The app is ready for hundreds — titles are baked in
+and need no network, and audio resolves per round — but the songs themselves
+still have to be harvested and curated. See *Scaling notes*.
 
 ## Scaling notes
 

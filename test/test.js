@@ -20,8 +20,9 @@ let appSrc = html.slice(appStart, appEnd);
 // expose internals for assertions
 appSrc = appSrc.replace(
   'ReactDOM.createRoot(document.getElementById("root")).render(h(App));',
-  'window.__T = { norm, scoreResult, chunk, waveShape, label, fmt, seedFrom, songSeed,' +
-  ' buildCatalog, ambiguousTitles, resolveCatalog, CATALOG, STEPS, MAX_ATTEMPTS, WAVE_BARS };'
+  'window.__T = { norm, scoreResult, pickBest, chunk, waveShape, label, fmt, seedFrom, songSeed,' +
+  ' buildCatalog, ambiguousTitles, resolveCatalog, resolveOne, CATALOG,' +
+  ' STEPS, MAX_ATTEMPTS, WAVE_BARS };'
 );
 
 function get(url) {
@@ -203,9 +204,38 @@ T.resolveCatalog(CATALOG, () => {}).then(res => {
     console.log('    ' + n + ' -> ' + t.itunesTitle + ' | ' + t.itunesAlbum);
   });
 
-  console.log('\n================  ' + pass + ' passed, ' + fail + ' failed  ================\n');
-  process.exit(fail ? 1 : 0);
+  return liveSingles();
 }).catch(e => {
   console.log('  FAIL  resolveCatalog threw: ' + e.message);
   process.exit(1);
 });
+
+// resolveOne is what the running game actually calls - one song, one request,
+// at the moment a round needs it. Both of its branches get exercised live.
+function liveSingles() {
+  console.log('\n--- live single-song resolution (the runtime path) ---');
+  const before = jsonpCalls.length;
+  const pinned = CATALOG[uidOf('Kesariya')];
+  const loose = T.buildCatalog([{ title: 'Kesariya', artist: 'Arijit Singh', movie: 'Brahmastra' }])[0];
+
+  return T.resolveOne(pinned).then(res => {
+    ok('pinned song resolves', !!res.track && !res.offline);
+    ok('costs exactly one request', jsonpCalls.length === before + 1, jsonpCalls.length - before);
+    ok('resolves via /lookup, not a search', jsonpCalls[before].includes('/lookup?id='));
+    ok('returns the pinned recording', res.track.itunesTitle === 'Kesariya', res.track.itunesTitle);
+    ok('with a playable preview', res.track.previewUrl.includes('.m4a'));
+    ok('and Apple attribution', !!res.track.trackViewUrl);
+    return T.resolveOne(loose);
+  }).then(res => {
+    ok('song with no trackId falls back to a scored search', !!res.track && !res.offline);
+    ok('fallback picked the original, not a variant',
+       !/remix|unplugged|karaoke|cover|lo-fi/i.test(res.track.itunesTitle), res.track.itunesTitle);
+    console.log('    no trackId -> ' + res.track.itunesTitle + ' | ' + res.track.itunesAlbum);
+
+    console.log('\n================  ' + pass + ' passed, ' + fail + ' failed  ================\n');
+    process.exit(fail ? 1 : 0);
+  }).catch(e => {
+    console.log('  FAIL  resolveOne threw: ' + e.message);
+    process.exit(1);
+  });
+}
