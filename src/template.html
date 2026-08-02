@@ -22,6 +22,12 @@
 <!--  https://itunes.apple.com/search?term=YOUR+SONG&entity=song&country=IN -->
 <!-- ===================================================================== -->
 <script>
+// Songs with an EMPTY movie are not from a film: indie, hip-hop and pop
+// singles. They sit in the same pool as everything else, so about a fifth of
+// rounds are one. Set this to false to play film songs only - nothing else
+// needs changing, and the catalog below stays exactly as it is.
+window.INCLUDE_NON_FILM = true;
+
 window.BOLLYWOOD_SONGS = [
   { title: "Tum Hi Ho", artist: "Arijit Singh", movie: "Aashiqui 2", trackId: 1073359419 },
   { title: "Chaiyya Chaiyya", artist: "Sukhwinder Singh, Sapna Awasthi", movie: "Dil Se", trackId: 1130322151 },
@@ -241,7 +247,6 @@ window.BOLLYWOOD_SONGS = [
   { title: "Rihaayi De", artist: "A.R. Rahman", movie: "Mimi", trackId: 1576395281 },
   { title: "Rom Rom", artist: "MC SQUARE, Tanishk Bagchi", movie: "Crakk - Jeetegaa Toh Jiyegaa", trackId: 1732013307 },
   { title: "Jaan Ban Gaye", artist: "Vishal Mishra, Asees Kaur", movie: "Khuda Haafiz", trackId: 1529866493 },
-  { title: "Atak Gaya (Acoustic)", artist: "Amit Trivedi", movie: "Badhaai Do", trackId: 1607982017 },
   { title: "Mehram", artist: "Sachet Tandon, Shellee", movie: "Jersey", trackId: 1621016266 },
   { title: "Dil", artist: "Raghav Chaitanya, Kunaal Vermaa", movie: "Ek Villain Returns", trackId: 1653060645 },
   { title: "Aye Meri Zindagi", artist: "Papon, Rashmi Virag", movie: "Babloo Bachelor", trackId: 1529563867 },
@@ -261,6 +266,7 @@ window.BOLLYWOOD_SONGS = [
   { title: "Alcoholia", artist: "Vishal, Shekhar, Snigdhajit Bhowmik", movie: "Vikram Vedha", trackId: 1648689114 },
   { title: "Rang Dariya", artist: "Yasser Desai", movie: "Chehre", trackId: 1582622888 },
   { title: "Big Bad Beast", artist: "Anirudh Ravichander", movie: "Beast (Original Background Score)", trackId: 1630941109 },
+  { title: "Hum Thay Seedhe Saadhe (Raj Barman)", artist: "Raj Barman", movie: "Badhaai Do", trackId: 1607982018 },
   { title: "Hotat Mone Bristi", artist: "Jeet Gannguli", movie: "Kolkatar Harry", trackId: 1619764342 },
   { title: "Jiya Nahin Lagta", artist: "Aakanksha Sharma, Rashmi Virag", movie: "Babloo Bachelor", trackId: 1529563868 },
   { title: "Maiyya Mainu", artist: "Sachet Tandon, Shellee", movie: "Jersey", trackId: 1621016268 },
@@ -1189,6 +1195,225 @@ window.BOLLYWOOD_SONGS = [
   { title: "Main Hoon Shab", artist: "Mohit Chauhan", movie: "Tezz", trackId: 1129814304 },
   { title: "Laila", artist: "Sunidhi Chauhan", movie: "Tezz", trackId: 1129814311 },
   { title: "Tere Bina Indian", artist: "Rahat Fateh Ali Khan", movie: "Tezz", trackId: 1129814373 },
+  { title: "Husn", artist: "Anuv Jain", movie: "", trackId: 1717140552 },
+  { title: "Jo Tum Mere Ho", artist: "Anuv Jain", movie: "", trackId: 1758669726 },
+  { title: "Alag Aasmaan", artist: "Anuv Jain", movie: "", trackId: 1710154601 },
+  { title: "Baarishein", artist: "Anuv Jain", movie: "", trackId: 1708026325 },
+  { title: "Afsos", artist: "Anuv Jain, AP Dhillon", movie: "", trackId: 1792366467 },
+  { title: "Gul", artist: "Anuv Jain", movie: "", trackId: 1708026408 },
+  { title: "Inaam", artist: "Anuv Jain", movie: "", trackId: 1858017679 },
+  { title: "Mishri", artist: "Anuv Jain", movie: "", trackId: 1710155755 },
+  { title: "Mazaak", artist: "Anuv Jain", movie: "", trackId: 1710154741 },
+  { title: "Riha", artist: "Anuv Jain", movie: "", trackId: 1710156740 },
+  { title: "Antariksh", artist: "Anuv Jain", movie: "", trackId: 1687717625 },
+  { title: "Maula", artist: "Anuv Jain", movie: "", trackId: 1710154752 },
+  { title: "Tune Kaha", artist: "Prateek Kuhad", movie: "", trackId: 1082164696 },
+  { title: "Kasoor", artist: "Prateek Kuhad", movie: "", trackId: 1519457069 },
+  { title: "Co2", artist: "Prateek Kuhad", movie: "", trackId: 1614528378 },
+  { title: "Tum Jab Paas", artist: "Prateek Kuhad", movie: "", trackId: 1230345867 },
+  { title: "Oh Love", artist: "Prateek Kuhad", movie: "", trackId: 946630765 },
+  { title: "cold/mess", artist: "Prateek Kuhad", movie: "", trackId: 1534546293 },
+  { title: "Tere Hi Hum", artist: "Prateek Kuhad", movie: "", trackId: 1571158973 },
+  { title: "All I Need", artist: "Prateek Kuhad", movie: "", trackId: 1614528374 },
+  { title: "Pause", artist: "Prateek Kuhad", movie: "", trackId: 1515226516 },
+  { title: "Go", artist: "Prateek Kuhad", movie: "", trackId: 946630769 },
+  { title: "Flames", artist: "Prateek Kuhad", movie: "", trackId: 946630767 },
+  { title: "Shehron Ke Raaz", artist: "Prateek Kuhad", movie: "", trackId: 1571158971 },
+  { title: "Tu hai kahan", artist: "AUR", movie: "", trackId: 1712068013 },
+  { title: "Shikayat", artist: "AUR", movie: "", trackId: 1719280172 },
+  { title: "Long time no see", artist: "Taimour Baigh, Raffey Anwar", movie: "", trackId: 1714662034 },
+  { title: "Kabhi Kabhi", artist: "AUR", movie: "", trackId: 1783136346 },
+  { title: "Sometimes", artist: "AUR", movie: "", trackId: 1720928113 },
+  { title: "Shayad", artist: "AUR", movie: "", trackId: 1720928308 },
+  { title: "Chehre", artist: "AUR", movie: "", trackId: 1720927390 },
+  { title: "Humsafar", artist: "AUR", movie: "", trackId: 1783136347 },
+  { title: "kya chahiye", artist: "AUR", movie: "", trackId: 1763226521 },
+  { title: "Raastah", artist: "AUR, Taimour Baig", movie: "", trackId: 1767537224 },
+  { title: "TUM", artist: "Asim Azhar, AUR", movie: "", trackId: 1790813778 },
+  { title: "Kabhi Mein Kabhi Tum", artist: "AUR", movie: "", trackId: 1749474626 },
+  { title: "Maan Meri Jaan", artist: "King", movie: "", trackId: 1649039974 },
+  { title: "Maan Meri Jaan (Afterlife)", artist: "King, Nick Jonas", movie: "", trackId: 1675016035 },
+  { title: "OOPS", artist: "King", movie: "", trackId: 1639343336 },
+  { title: "Tu Aake Dekhle", artist: "King", movie: "", trackId: 1692685146 },
+  { title: "Na Ja Tu", artist: "King", movie: "", trackId: 1649039963 },
+  { title: "Ektarfa", artist: "King", movie: "", trackId: 1624487807 },
+  { title: "Tum Saath Rehnaa", artist: "King", movie: "", trackId: 1491346036 },
+  { title: "Ilzaam (From the Album 'Industry')", artist: "Arjun Kanungo, King", movie: "", trackId: 1613924685 },
+  { title: "Pablo", artist: "King", movie: "", trackId: 1649039985 },
+  { title: "Tu Jaana Na Piya", artist: "King", movie: "", trackId: 1712956348 },
+  { title: "Sinner", artist: "King", movie: "", trackId: 1625898887 },
+  { title: "Sarkaare", artist: "King", movie: "", trackId: 1707815447 },
+  { title: "Chalo Chalein", artist: "Ritviz", movie: "", trackId: 1550339545 },
+  { title: "Raat Ki Rani", artist: "Seedhe Maut", movie: "", trackId: 1762198511 },
+  { title: "Khatta Flow", artist: "Seedhe Maut, KR$NA", movie: "", trackId: 1703241345 },
+  { title: "Luka Chippi", artist: "Seedhe Maut, Bandzo3rd", movie: "", trackId: 1703240868 },
+  { title: "Asal G", artist: "Seedhe Maut, Talal Qureshi, Faris Shafi", movie: "", trackId: 1703240287 },
+  { title: "11K", artist: "Seedhe Maut", movie: "", trackId: 1703238430 },
+  { title: "Roshni", artist: "Ritviz, Seedhe Maut, Sickflip", movie: "", trackId: 1531329664 },
+  { title: "Pickup", artist: "Seedhe Maut, Hurricane, DL91 Era", movie: "", trackId: 1812505750 },
+  { title: "Madira", artist: "Seedhe Maut, Hurricane, DL91 Era", movie: "", trackId: 1812505632 },
+  { title: "Naksha", artist: "Seedhe Maut", movie: "", trackId: 1762198517 },
+  { title: "RED", artist: "Seedhe Maut, Hisab", movie: "", trackId: 1784665629 },
+  { title: "KODAK", artist: "King, Seedhe Maut", movie: "", trackId: 1755026625 },
+  { title: "Ek Din Pyaar (Tadipaar)", artist: "MC Stan", movie: "", trackId: 1535586626 },
+  { title: "Basti Ka Hasti", artist: "MC Stan", movie: "", trackId: 1610310012 },
+  { title: "Haath Varthi", artist: "MC Stan, KSHMR, Phenom", movie: "", trackId: 1685804265 },
+  { title: "Snake", artist: "MC Stan", movie: "", trackId: 1558426262 },
+  { title: "Ek Din Pyaar", artist: "MC Stan", movie: "", trackId: 1548245801 },
+  { title: "Astaghfirullah", artist: "MC Stan", movie: "", trackId: 1530289537 },
+  { title: "Bitch", artist: "MC Stan", movie: "", trackId: 1610309817 },
+  { title: "Shana Bann", artist: "MC Stan", movie: "", trackId: 1629032365 },
+  { title: "Rehmani Keeda", artist: "MC Stan", movie: "", trackId: 1569008547 },
+  { title: "Tadipaar", artist: "MC Stan", movie: "", trackId: 1548245886 },
+  { title: "F*CK WHAT THEY SAY", artist: "King, MC Stan", movie: "", trackId: 1760151713 },
+  { title: "Amin", artist: "MC Stan", movie: "", trackId: 1548245821 },
+  { title: "Joota Japani", artist: "KR$NA, Mukesh, Shankar - Jaikishan", movie: "", trackId: 1726345634 },
+  { title: "Boom Shaka", artist: "KR$NA, Dhanda Nyoliwala", movie: "", trackId: 6763153453 },
+  { title: "No Cap", artist: "KR$NA", movie: "", trackId: 1592662506 },
+  { title: "Kaha Tak", artist: "KR$NA", movie: "", trackId: 1674973226 },
+  { title: "Machayenge 4", artist: "KR$NA", movie: "", trackId: 1633775092 },
+  { title: "Bag", artist: "DIVINE", movie: "", trackId: 1513200332 },
+  { title: "Knock Knock", artist: "KR$NA, Phenom", movie: "", trackId: 1814144430 },
+  { title: "NGL", artist: "KR$NA", movie: "", trackId: 1674973227 },
+  { title: "Tony Montana", artist: "Karma, KR$NA", movie: "", trackId: 1652992220 },
+  { title: "Makasam", artist: "KR$NA", movie: "", trackId: 1549668815 },
+  { title: "Hola At Your Boy", artist: "Badshah, KR$NA, Prajina", movie: "", trackId: 1736450034 },
+  { title: "Baazigar", artist: "DIVINE, Armani White", movie: "", trackId: 1653648061 },
+  { title: "Tareefan", artist: "DIVINE, Karan Aujla", movie: "", trackId: 1730005530 },
+  { title: "100 Million", artist: "DIVINE, Karan Aujla", movie: "", trackId: 1725168071 },
+  { title: "Nothing Lasts", artist: "DIVINE, Karan Aujla", movie: "", trackId: 1730005004 },
+  { title: "Top Class / Overseas", artist: "DIVINE, Karan Aujla", movie: "", trackId: 1730005006 },
+  { title: "Chorni", artist: "DIVINE, Sidhu Moose Wala", movie: "", trackId: 1696262100 },
+  { title: "Kaam 25 (Sacred Games)", artist: "DIVINE", movie: "", trackId: 1404247657 },
+  { title: "City Slums", artist: "Raja Kumari", movie: "", trackId: 1292155382 },
+  { title: "Gunehgar", artist: "DIVINE", movie: "", trackId: 1643480857 },
+  { title: "Sitara", artist: "DIVINE, Jonita Gandhi", movie: "", trackId: 1653648378 },
+  { title: "Jungli Sher", artist: "DIVINE", movie: "", trackId: 1090882041 },
+  { title: "Farak", artist: "DIVINE", movie: "", trackId: 1205945425 },
+  { title: "Swag Mera Desi", artist: "Raftaar, Manj Musik", movie: "", trackId: 951006393 },
+  { title: "All Black", artist: "Raftaar, Sukh-E Muzical Doctorz", movie: "", trackId: 1159600837 },
+  { title: "We Doin' It Big", artist: "RDB", movie: "", trackId: 574786351 },
+  { title: "Ghana Kasoota", artist: "Raftaar, Rashmeet Kaur", movie: "", trackId: 1592956489 },
+  { title: "Stand Up - Spoken Word", artist: "B.I.G Dhillon, Raftaar, Manj Musik", movie: "", trackId: 985958524 },
+  { title: "Bbm", artist: "Nindy Kaur", movie: "", trackId: 593508285 },
+  { title: "Gal Mitro", artist: "Nindy Kaur", movie: "", trackId: 643049582 },
+  { title: "Ladki Ki Party", artist: "Nambardar", movie: "", trackId: 711443870 },
+  { title: "Chora Baba Ka", artist: "Raftaar, Dhanda Nyoliwala", movie: "", trackId: 1711019967 },
+  { title: "Legacy", artist: "KSHMR, Raftaar", movie: "", trackId: 1706792330 },
+  { title: "Mera Highway Star", artist: "Tulsi Kumar, Raftaar, Sanjay Rajee", movie: "", trackId: 1225527683 },
+  { title: "Madam Ji", artist: "Indeep Bakshi", movie: "", trackId: 731809265 },
+  { title: "At Peace", artist: "Karan Aujla, Ikky", movie: "", trackId: 1819981707 },
+  { title: "Winning Speech", artist: "Karan Aujla, MXRCI", movie: "", trackId: 1745062759 },
+  { title: "Softly", artist: "Karan Aujla, Ikky", movie: "", trackId: 1697533818 },
+  { title: "Wavy", artist: "Karan Aujla, Jay Trak", movie: "", trackId: 1779786209 },
+  { title: "Admirin' You", artist: "Karan Aujla, Ikky", movie: "", trackId: 1697533664 },
+  { title: "God Damn", artist: "Badshah, Karan Aujla, Hiten", movie: "", trackId: 1736449719 },
+  { title: "For A Reason", artist: "Karan Aujla, Ikky", movie: "", trackId: 1829591983 },
+  { title: "Goin' Off", artist: "Karan Aujla, MXRCI", movie: "", trackId: 1745046634 },
+  { title: "IDK HOW", artist: "Karan Aujla", movie: "", trackId: 1753101068 },
+  { title: "WOH", artist: "Ikka, Dino James, Badshah", movie: "", trackId: 1656665787 },
+  { title: "Chosen", artist: "Dino James", movie: "", trackId: 1619084173 },
+  { title: "Dooriyan", artist: "Dino James", movie: "", trackId: 1494684334 },
+  { title: "Wishlist", artist: "Dino James", movie: "", trackId: 1503298665 },
+  { title: "Lost", artist: "Dino James", movie: "", trackId: 1611951921 },
+  { title: "Pyaar Pyaar", artist: "Dino James", movie: "", trackId: 1623586157 },
+  { title: "Sound De", artist: "Dino James", movie: "", trackId: 1576874132 },
+  { title: "Unstoppable", artist: "Dino James", movie: "", trackId: 1786359827 },
+  { title: "Dhundhla", artist: "Dino James", movie: "", trackId: 1623586004 },
+  { title: "Khaas", artist: "Dino James", movie: "", trackId: 1575254482 },
+  { title: "Door Aa Gaye", artist: "Vishal Mishra, Dino James", movie: "", trackId: 1715837986 },
+  { title: "Still Here", artist: "Dino James", movie: "", trackId: 1811929360 },
+  { title: "Ishq Nachaawe", artist: "Karan Kanchan, Rashmeet Kaur, Yashraj", movie: "", trackId: 1766715747 },
+  { title: "Bindaas", artist: "Maharya", movie: "", trackId: 1804700340 },
+  { title: "Khasara", artist: "Abdul Hannan, Samar Jafri", movie: "", trackId: 1883097849 },
+  { title: "MAKE YOU MINE", artist: "Umair", movie: "", trackId: 1740701546 },
+  { title: "O Yaara", artist: "Abdul Hannan, Kaavish", movie: "", trackId: 1745124250 },
+  { title: "kya hua?", artist: "Zaeden, Abdul Hannan", movie: "", trackId: 1760605678 },
+  { title: "Bikhra", artist: "Abdul Hannan", movie: "", trackId: 1835426238 },
+  { title: "Bewajah", artist: "Abdul Hannan, Alan Sampson", movie: "", trackId: 1872505824 },
+  { title: "Gila", artist: "Abdul Hannan, Shae Gill, Velo Sound Station", movie: "", trackId: 1808682116 },
+  { title: "Ulfat", artist: "SEHER, Abdul Hannan, Shahmeer Raza Khan", movie: "", trackId: 1867265750 },
+  { title: "Khulasa", artist: "Abdul Hannan, Shahmeer Raza Khan", movie: "", trackId: 1871126317 },
+  { title: "Zamanay", artist: "Ali Alvi, Abdul Hannan, Shahmeer Raza Khan", movie: "", trackId: 1732630971 },
+  { title: "FURABE HAYAT", artist: "Abdul Hannan", movie: "", trackId: 6773717266 },
+  { title: "Udd Gaye", artist: "Ritviz", movie: "", trackId: 1550578437 },
+  { title: "Baaraat", artist: "Ritviz, Nucleya", movie: "", trackId: 1588806679 },
+  { title: "Sage", artist: "Ritviz", movie: "", trackId: 1550578623 },
+  { title: "Liggi", artist: "Ritviz", movie: "", trackId: 1549497036 },
+  { title: "Jeet", artist: "Ritviz", movie: "", trackId: 1550578440 },
+  { title: "Roz", artist: "Ritviz, Nucleya", movie: "", trackId: 1588806674 },
+  { title: "Aaj Na", artist: "Ritviz", movie: "", trackId: 1643119337 },
+  { title: "Sathi", artist: "Ritviz, Nucleya", movie: "", trackId: 1588806211 },
+  { title: "Barso", artist: "Ritviz", movie: "", trackId: 1550578606 },
+  { title: "Khamoshi", artist: "Ritviz, Karan Kanchan", movie: "", trackId: 1575881355 },
+  { title: "So beautiful, with you", artist: "When Chai Met Toast", movie: "", trackId: 1680448455 },
+  { title: "Khoj (Passing By)", artist: "When Chai Met Toast", movie: "", trackId: 1435284788 },
+  { title: "Hearts Never Break", artist: "When Chai Met Toast", movie: "", trackId: 1682145914 },
+  { title: "Yellow Paper Daisy", artist: "When Chai Met Toast", movie: "", trackId: 1584302051 },
+  { title: "Joy of Little Things", artist: "When Chai Met Toast", movie: "", trackId: 1710800131 },
+  { title: "Sushi Song", artist: "When Chai Met Toast", movie: "", trackId: 1676959088 },
+  { title: "'Hop Stomp'", artist: "When Chai Met Toast", movie: "", trackId: 1450782337 },
+  { title: "Believe", artist: "When Chai Met Toast", movie: "", trackId: 1435284942 },
+  { title: "Forever", artist: "When Chai Met Toast", movie: "", trackId: 1435284943 },
+  { title: "When We Feel Young", artist: "When Chai Met Toast", movie: "", trackId: 1711081490 },
+  { title: "Who Are You", artist: "When Chai Met Toast", movie: "", trackId: 1435284790 },
+  { title: "Die Trying", artist: "Kenny Sebastian", movie: "", trackId: 1354517448 },
+  { title: "Tu Aisa Kaise Hai?", artist: "Osho Jain", movie: "", trackId: 1537745947 },
+  { title: "Dekha Hi Nahi", artist: "Osho Jain", movie: "", trackId: 1770529491 },
+  { title: "Humara Ho Gaya", artist: "Osho Jain", movie: "", trackId: 1589030873 },
+  { title: "Khush to Hai Na", artist: "Osho Jain", movie: "", trackId: 1471915126 },
+  { title: "Mushkil Hai", artist: "Osho Jain", movie: "", trackId: 1523735256 },
+  { title: "Kya Pata", artist: "Osho Jain", movie: "", trackId: 1515233349 },
+  { title: "Tujhse Badhkar Nahi Hai", artist: "Osho Jain", movie: "", trackId: 1509483768 },
+  { title: "Sahare Tere", artist: "Osho Jain", movie: "", trackId: 1545355400 },
+  { title: "Har Ghar Diwali", artist: "Osho Jain", movie: "", trackId: 1540221403 },
+  { title: "Khud Se", artist: "Osho Jain", movie: "", trackId: 1499625581 },
+  { title: "Allah Shankar", artist: "Osho Jain", movie: "", trackId: 1471907042 },
+  { title: "Lamhe", artist: "Raghav Chaitanya", movie: "", trackId: 1505952774 },
+  { title: "Baatein", artist: "Raghav Chaitanya", movie: "", trackId: 1496894357 },
+  { title: "Tere Bin", artist: "Raghav Chaitanya", movie: "", trackId: 1600299028 },
+  { title: "Jaane De", artist: "The Rish, Raghav Chaitanya", movie: "", trackId: 1635514298 },
+  { title: "Parwaah", artist: "Raghav Chaitanya", movie: "", trackId: 1534115879 },
+  { title: "Gustakhiyaan", artist: "Raghav Chaitanya, Ritrisha Sarmah", movie: "", trackId: 1510343181 },
+  { title: "Khoobsurat", artist: "Neha Kakkar, Raghav Chaitanya", movie: "", trackId: 1688730591 },
+  { title: "Faasle", artist: "Raghav Chaitanya", movie: "", trackId: 1574797854 },
+  { title: "Oh Teri!", artist: "Raghav Chaitanya", movie: "", trackId: 1493141743 },
+  { title: "Chahte Hain", artist: "Raghav Chaitanya, Shilpa Rao", movie: "", trackId: 1793739088 },
+  { title: "Chaand Baaliyan", artist: "Aditya A", movie: "", trackId: 1611001829 },
+  { title: "Khwab", artist: "Iqlipse Nova, Aditya A", movie: "", trackId: 1673984267 },
+  { title: "Chaand Baaliyan Duet", artist: "Aditya A", movie: "", trackId: 1626057317 },
+  { title: "Sunday", artist: "Aditya A, NAALAYAK", movie: "", trackId: 1715699335 },
+  { title: "Awaargi", artist: "Aditya A", movie: "", trackId: 1684478427 },
+  { title: "Chaand Baaliyan (On Piano)", artist: "Aditya A, Naman Paliwal", movie: "", trackId: 1670381512 },
+  { title: "Chaand Baaliyan (Piano Lori)", artist: "Aditya A, Bollywood Instrumentals", movie: "", trackId: 1752859419 },
+  { title: "Saj Ke", artist: "Aditya A", movie: "", trackId: 1697894139 },
+  { title: "Heeriye", artist: "Aditya A", movie: "", trackId: 1554896574 },
+  { title: "Chaand Baaliyan (On Sitar)", artist: "Aditya A, Bhagirath Bhatt", movie: "", trackId: 1670381513 },
+  { title: "Indie Safar (2022)", artist: "Madoc, Aditya A, Dikshant", movie: "", trackId: 1660926993 },
+  { title: "Chaand Baaliyan (Girl Let Me Tell You)", artist: "Aditya A, Mumzy Stranger", movie: "", trackId: 1626494707 },
+  { title: "Akhiyaan", artist: "Mitraz", movie: "", trackId: 1611369502 },
+  { title: "Sara Zamana", artist: "Mitraz", movie: "", trackId: 1670795490 },
+  { title: "Junoon", artist: "Mitraz", movie: "", trackId: 1606975597 },
+  { title: "Gulaab", artist: "Mitraz", movie: "", trackId: 1651205375 },
+  { title: "Pehli Vaari", artist: "Mitraz, Reiha Ali", movie: "", trackId: 1766481162 },
+  { title: "Muskurahat", artist: "Mitraz", movie: "", trackId: 1631084452 },
+  { title: "Zehen", artist: "Mitraz", movie: "", trackId: 1651205376 },
+  { title: "Mehboob", artist: "Mitraz", movie: "", trackId: 1651205377 },
+  { title: "Alfaazo", artist: "Mitraz", movie: "", trackId: 1653370332 },
+  { title: "Khayaal", artist: "Mitraz", movie: "", trackId: 1651205379 },
+  { title: "Nadiyon Sa", artist: "Mitraz", movie: "", trackId: 1686671955 },
+  { title: "Laaya", artist: "Mitraz", movie: "", trackId: 1624791638 },
+  { title: "jaana", artist: "Zaeden", movie: "", trackId: 1671163669 },
+  { title: "Tere Bina", artist: "Zaeden", movie: "", trackId: 1477621851 },
+  { title: "sol (intro)", artist: "Zaeden", movie: "", trackId: 1760605424 },
+  { title: "KTMBK", artist: "Zaeden, Hanita Bhambri", movie: "", trackId: 1556277200 },
+  { title: "Tempted To Touch", artist: "Zaeden", movie: "", trackId: 1388481632 },
+  { title: "socha na tha", artist: "Zaeden", movie: "", trackId: 1539912682 },
+  { title: "Noor", artist: "Lost Stories, Akanksha Bhandari, Zaeden", movie: "", trackId: 1519756728 },
+  { title: "Kya Karoon?", artist: "Zaeden", movie: "", trackId: 1504514087 },
+  { title: "5 saal", artist: "Zaeden, Pdny", movie: "", trackId: 1756135674 },
+  { title: "Aa Mil", artist: "Zaeden, Lisa Mishra", movie: "", trackId: 1709449898 },
+  { title: "5 am", artist: "Zaeden", movie: "", trackId: 1760605669 },
 ];
 </script>
 
@@ -1743,6 +1968,8 @@ button:disabled { cursor: not-allowed; }
   text-transform: uppercase;
   color: var(--marigold);
 }
+/* Not a film title, so it should not be dressed as one. */
+.card-movie.is-single { color: var(--muted); }
 
 .fullplayer {
   display: flex;
@@ -2218,22 +2445,35 @@ button:disabled { cursor: not-allowed; }
   // key off the title. Doing so would both collide in the preview cache and
   // mark a player correct for naming a different film's song of the same name.
   // uid is the catalog index: stable for a session, and free.
-  function buildCatalog(raw) {
-    return (raw || []).map(function (s, i) {
-      return {
-        uid: i,
-        title: s.title,
-        artist: s.artist,
-        movie: s.movie,
-        term: s.term,
-        trackId: s.trackId,
-        nTitle: norm(s.title),
-        nMovie: norm(s.movie)
-      };
-    });
+  //
+  // An empty movie means the song is not from a film. Those still need
+  // SOMETHING to tell them apart when titles collide - the catalog holds both
+  // Pritam's Raabta from Agent Vinod and Abdul Hannan's indie Raabta - so
+  // every song carries a `context`: the film where there is one, the artist
+  // where there is not. Everything downstream disambiguates on that rather
+  // than on the film, which is what lets the two kinds share one pool.
+  function buildCatalog(raw, includeNonFilm) {
+    return (raw || [])
+      .filter(function (s) { return includeNonFilm || s.movie; })
+      .map(function (s, i) {
+        var context = s.movie || s.artist;
+        return {
+          uid: i,
+          title: s.title,
+          artist: s.artist,
+          movie: s.movie || "",
+          isFilm: !!s.movie,
+          context: context,
+          term: s.term,
+          trackId: s.trackId,
+          nTitle: norm(s.title),
+          nMovie: norm(s.movie),
+          nContext: norm(context)
+        };
+      });
   }
 
-  // Titles appearing more than once, so the UI can disambiguate by film.
+  // Titles appearing more than once, so the UI can disambiguate them.
   function ambiguousTitles(catalog) {
     var seen = {}, dupes = {};
     catalog.forEach(function (s) {
@@ -2249,9 +2489,9 @@ button:disabled { cursor: not-allowed; }
     return s || 1;
   }
 
-  // Title + film, never title alone: two songs sharing a title must not share a
-  // waveform, a placeholder cover or a synth phrase.
-  function songSeed(song) { return seedFrom(song.nTitle + "|" + song.nMovie); }
+  // Title + context, never title alone: two songs sharing a title must not
+  // share a waveform, a placeholder cover or a synth phrase.
+  function songSeed(song) { return seedFrom(song.nTitle + "|" + song.nContext); }
 
   function waveShape(seed) {
     var s = seed >>> 0 || 1;
@@ -2387,7 +2627,7 @@ button:disabled { cursor: not-allowed; }
                   onMouseDown: function (e) { e.preventDefault(); choose(s); }
                 },
                   h("span", { className: "option-title" }, s.title),
-                  h("span", { className: "option-movie" }, s.movie));
+                  h("span", { className: "option-movie" }, s.context));
               })
         ) : null,
         h("input", {
@@ -2452,13 +2692,13 @@ button:disabled { cursor: not-allowed; }
 
   // Built once, at load: the raw array from the top of the file with ids and
   // normalised forms attached. Everything below keys off uid, never title.
-  var CATALOG = buildCatalog(window.BOLLYWOOD_SONGS);
+  var CATALOG = buildCatalog(window.BOLLYWOOD_SONGS, window.INCLUDE_NON_FILM !== false);
   var DUPE_TITLES = ambiguousTitles(CATALOG);
 
-  // A guess row has to say which film when the title alone is ambiguous,
+  // A guess row has to say WHICH song when the title alone is ambiguous,
   // otherwise a wrong answer reads as though it were the right one.
   function guessLabel(song) {
-    return DUPE_TITLES[song.nTitle] ? song.title + " · " + song.movie : song.title;
+    return DUPE_TITLES[song.nTitle] ? song.title + " · " + song.context : song.title;
   }
 
   function App() {
@@ -2800,7 +3040,11 @@ button:disabled { cursor: not-allowed; }
             h("div", { className: "card-meta" },
               h("h2", { className: "card-title" }, song.title),
               h("div", { className: "card-artist" }, song.artist),
-              h("div", { className: "card-movie" }, song.movie)
+              // Non-film songs have no film line; the artist above already
+              // says everything there is to say about where the song is from.
+              song.isFilm
+                ? h("div", { className: "card-movie" }, song.movie)
+                : h("div", { className: "card-movie is-single" }, "Non-film single")
             )
           ),
 

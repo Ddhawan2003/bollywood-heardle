@@ -95,16 +95,23 @@ function ok(name, cond, extra) {
 
 console.log('\n--- catalog (' + SONGS.length + ' songs) ---');
 ok('catalog is populated', SONGS.length >= 18, SONGS.length);
-ok('every song has title/artist/movie', SONGS.every(s => s.title && s.artist && s.movie));
+// movie is deliberately NOT required: an empty one marks a non-film song.
+ok('every song has a title and an artist', SONGS.every(s => s.title && s.artist));
 ok('every song pinned to a trackId', SONGS.every(s => typeof s.trackId === 'number'));
+
+const nonFilm = CATALOG.filter(s => !s.isFilm);
+console.log('    (' + (CATALOG.length - nonFilm.length) + ' film, ' +
+            nonFilm.length + ' non-film)');
 
 // Titles are NOT required to be unique - Hindi film music reuses them, and the
 // game handles that by identity. A repeated *recording* is a harvester bug.
 const ids = SONGS.map(s => s.trackId);
 ok('no trackId appears twice', new Set(ids).size === ids.length,
    ids.filter((v, i) => ids.indexOf(v) !== i).join(','));
-const pairs = CATALOG.map(s => s.nTitle + '|' + s.nMovie);
-ok('no title+film pair appears twice', new Set(pairs).size === pairs.length,
+// Context, not film: non-film songs all have an empty film, so keying on it
+// would make every one of them look like a duplicate of the others.
+const pairs = CATALOG.map(s => s.nTitle + '|' + s.nContext);
+ok('no title+context pair appears twice', new Set(pairs).size === pairs.length,
    pairs.filter((v, i) => pairs.indexOf(v) !== i).slice(0, 5).join(' / '));
 ok('no song is credited to nobody', SONGS.every(s => s.artist.trim().length > 1));
 
@@ -116,14 +123,24 @@ ok('normalised forms precomputed', CATALOG.every(s => s.nTitle === T.norm(s.titl
    s.nMovie === T.norm(s.movie)));
 
 // Colliding titles are expected at catalog scale and must be survivable, not
-// absent: each one has to resolve to distinct songs from distinct films.
+// absent: each one has to resolve to songs with distinct contexts.
 const ambiguous = Object.keys(T.ambiguousTitles(CATALOG));
-console.log('    (' + ambiguous.length + ' titles shared across films' +
+console.log('    (' + ambiguous.length + ' titles shared' +
             (ambiguous.length ? ': ' + ambiguous.slice(0, 6).join(', ') : '') + ')');
-ok('every shared title spans distinct films', ambiguous.every(t => {
-  const films = CATALOG.filter(s => s.nTitle === t).map(s => s.nMovie);
-  return new Set(films).size === films.length;
+ok('every shared title spans distinct contexts', ambiguous.every(t => {
+  const ctx = CATALOG.filter(s => s.nTitle === t).map(s => s.nContext);
+  return new Set(ctx).size === ctx.length;
 }));
+
+// A non-film song has no film, so the artist is what tells it apart. Without
+// this the two Raabtas - Pritam's from Agent Vinod and Abdul Hannan's indie
+// one - would be indistinguishable to the guess check.
+ok('non-film songs fall back to the artist as context',
+   nonFilm.every(s => s.context === s.artist && s.nContext === T.norm(s.artist)));
+ok('film songs still use the film as context',
+   CATALOG.filter(s => s.isFilm).every(s => s.context === s.movie));
+ok('isFilm is set from whether there is a film',
+   CATALOG.every(s => s.isFilm === !!s.movie));
 
 // The failure this whole scheme exists to prevent: one title, two films.
 const collide = T.buildCatalog([
@@ -138,6 +155,25 @@ ok('guess compare by uid says these two differ', collide[0].uid !== collide[1].u
    collide[0].nTitle === collide[1].nTitle);
 ok('same-title songs get different waveform seeds',
    T.songSeed(collide[0]) !== T.songSeed(collide[1]));
+
+// Two songs called Raabta, one from a film and one not. They must stay
+// distinct, and the non-film one must disappear when the flag is off.
+const bothKinds = [
+  { title: 'Raabta', artist: 'Arijit Singh', movie: 'Agent Vinod', trackId: 1 },
+  { title: 'Raabta', artist: 'Abdul Hannan', movie: '', trackId: 2 },
+];
+const both = T.buildCatalog(bothKinds, true);
+const filmOnly = T.buildCatalog(bothKinds, false);
+ok('both kinds present when non-film is on', both.length === 2);
+ok('the same title from a film and not is still ambiguous',
+   T.ambiguousTitles(both)['raabta'] === true);
+ok('they get different contexts', both[0].nContext !== both[1].nContext,
+   both.map(s => s.nContext).join(' / '));
+ok('and different waveform seeds', T.songSeed(both[0]) !== T.songSeed(both[1]));
+ok('flag off drops the non-film song', filmOnly.length === 1 && filmOnly[0].isFilm);
+ok('flag off leaves the film song untouched', filmOnly[0].movie === 'Agent Vinod');
+ok('flag off makes the title unambiguous again',
+   T.ambiguousTitles(filmOnly)['raabta'] === undefined);
 
 console.log('\n--- rules ---');
 ok('steps are 0.5,1,2,4,8,16', T.STEPS.join(',') === '0.5,1,2,4,8,16');

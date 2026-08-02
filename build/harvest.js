@@ -75,6 +75,18 @@ const COMPOSERS = [
   'Anirudh Ravichander', 'Sachet-Parampara', 'Vishal Mishra', 'Amaal Mallik',
 ];
 
+// Hindi and Punjabi music that is NOT from a film: indie, hip-hop, pop singles.
+// These are harvested a completely different way - see harvestArtists - because
+// there is no film to hang them off. Seeded from a Spotify liked-songs export,
+// so the list is what one player actually listens to rather than a guess at a
+// canon; edit it freely.
+const ARTISTS = [
+  'Anuv Jain', 'Prateek Kuhad', 'AUR', 'King', 'Seedhe Maut',
+  'MC STAN', 'KR$NA', 'DIVINE', 'Raftaar', 'Karan Aujla',
+  'Dino James', 'Yashraj', 'Abdul Hannan', 'Ritviz', 'When Chai Met Toast',
+  'Osho Jain', 'Raghav Chaitanya', 'Aditya A', 'Mitraz', 'Zaeden',
+];
+
 const CONFIG = {
   // Apple's ordering puts a composer's big films first, so this is a relevance
   // cutoff as much as a budget. It was 20, which stopped dead at 2019 for the
@@ -82,6 +94,7 @@ const CONFIG = {
   // Bhulaiyaa 2 #29, Dunki #36. Every one of those is past a cutoff of 20, so
   // no amount of rescoring could reach them; they were never fetched.
   albumsPerComposer: 60,
+  songsPerArtist: 12,      // non-film artists, in Apple's own order
   songsPerFilm: 3,         // no single soundtrack may dominate
   songsPerComposer: 20,    // nor may one composer - applied per era, not overall
   delayMs: 3200,           // ~19 requests/minute, under Apple's soft limit
@@ -116,6 +129,8 @@ const flag = (name, fallback) => {
 const DRY = argv.includes('--dry');
 CONFIG.target = flag('target', CONFIG.target);
 const COMPOSER_LIMIT = flag('composers', COMPOSERS.length);
+const ARTIST_LIMIT = flag('artists', ARTISTS.length);
+const FILM_ONLY = argv.includes('--film-only');   // skip the non-film harvest
 
 /* ------------------------------------------------------------------ */
 /* Fetching                                                            */
@@ -185,9 +200,18 @@ const BAD_TITLE = new RegExp('\\b(' + [
   'reprise', 'karaoke', 'encore', 'mashup', 'medley', 'recreated', 'dialogues',
   'dialogue', 'live', 'slowed', 'theme', 'interlude', 'score', 'promo',
   'jhankar', 'remastered',
+  // Session and showcase series re-record songs that already exist under their
+  // own name. Rare on soundtracks, constant in indie: Anuv Jain ships an
+  // acoustic cut of nearly everything.
+  'acoustic', 'coke studio', 'dewarists', 'sessions', 'session',
 ].join('|') + ')\\b', 'i');
 
 const NON_HINDI = /\b(telugu|tamil|kannada|malayalam|punjabi|bhojpuri|marathi|bengali|gujarati)\b/i;
+
+// The non-film path uses this instead. Punjabi is deliberately absent: a Hindi
+// film soundtrack labelled "Punjabi" is a regional dub and unwanted, but half
+// the point of seeding Karan Aujla is the Punjabi tracks.
+const NON_HINDI_LOOSE = /\b(telugu|tamil|kannada|malayalam|bhojpuri|marathi|bengali)\b/i;
 
 function filmFromAlbum(name) {
   return (name || '')
@@ -414,6 +438,100 @@ async function harvest() {
 }
 
 /* ------------------------------------------------------------------ */
+/* Non-film harvest                                                    */
+/* ------------------------------------------------------------------ */
+
+// Two requests per artist, against ~27 for the film path, because there is no
+// album to expand: the film path only walks albums to read the FILM out of the
+// album name, and a single has no film to read. entity=song on an artistId
+// returns the tracks directly.
+//
+// No scoring either. Selection under scarcity is what the whole film pipeline
+// exists for - which 300 of 7,576, and how to keep one era from taking them
+// all. Here the artists are named deliberately and we want their catalogue, so
+// there is nothing to select: take the first songsPerArtist that survive the
+// quality filters, in Apple's own order, which puts an artist's prominent
+// releases first.
+async function harvestArtists() {
+  const out = [];
+  for (const name of ARTISTS.slice(0, ARTIST_LIMIT)) {
+    const id = await artistIdFor(name);
+    if (!id) { console.log('  ' + name.padEnd(22) + ' no artistId, skipped'); continue; }
+
+    const res = await lookup(id, 'song', 200);
+    const seen = new Set();
+    const kept = [];
+
+    for (const t of res.results || []) {
+      if (kept.length >= CONFIG.songsPerArtist) break;
+      if (t.wrapperType !== 'track' || t.kind !== 'song') continue;
+      if (!t.previewUrl || !t.trackId) continue;
+      if (!t.trackTimeMillis || t.trackTimeMillis < 60000) continue;
+
+      // Indie artists put out acoustic cuts, lofi flips and remixes constantly,
+      // so this filter does far more work here than on the film path.
+      const title = tidyTitle(t.trackName);
+      if (!title || BAD_TITLE.test(title)) continue;
+      if (NON_HINDI_LOOSE.test(title) || NON_HINDI_LOOSE.test(t.collectionName || '')) continue;
+
+      // These artists sing on soundtracks too - Raghav Chaitanya is on Animal,
+      // and seeding him pulled Hua Main in here as though it had no film. A
+      // film song reached through the artist path is still a film song: the
+      // film path already has it, correctly labelled, so drop it rather than
+      // shipping the same recording twice under two different identities.
+      if (unpackFrom(t.trackName)) continue;
+      if (/original motion picture|soundtrack|music from/i.test(t.collectionName || '')) continue;
+
+      // The same recording is a single, an album track and a compilation track
+      // under three different trackIds. Keyed by title+artist, not title+film:
+      // there is no film.
+      const artist = cleanArtists(t.artistName, '') || t.artistName;
+      const key = norm(title) + '|' + norm(artist);
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      kept.push({
+        title: title.trim(),
+        artist,
+        movie: '',                 // no film - this IS the non-film marker
+        trackId: t.trackId,
+        nTitle: norm(title),
+        nMovie: '',
+        year: Number((t.releaseDate || '').slice(0, 4)) || 0,
+        seededAs: name,
+      });
+    }
+
+    out.push(...kept);
+    console.log('  ' + name.padEnd(22) + String(kept.length).padStart(3) + ' songs');
+  }
+  return out;
+}
+
+// A playback singer's own catalogue includes the film songs they sang on, and
+// Apple does not always label those as soundtracks - Hua Main came back through
+// Raghav Chaitanya with no film attached, so it shipped twice: once correctly
+// as ANIMAL and once as a non-film single. Two identities for one recording
+// means guessing the right film scores WRONG, which is worse than missing the
+// song entirely.
+//
+// Same title AND a shared performer means same song. Title alone is not enough
+// and must not be used: AUR's Shayad and Love Aaj Kal's Shayad really are two
+// different songs, and so are Zaeden's Tere Bina and Guru's.
+function dropFilmDuplicates(indie, film) {
+  const byTitle = new Map();
+  for (const f of film) {
+    if (!byTitle.has(f.nTitle)) byTitle.set(f.nTitle, new Set());
+    f.artist.split(/,\s*/).forEach(a => byTitle.get(f.nTitle).add(norm(a)));
+  }
+  return indie.filter(s => {
+    const performers = byTitle.get(s.nTitle);
+    if (!performers) return true;
+    return !s.artist.split(/,\s*/).some(a => performers.has(norm(a)));
+  });
+}
+
+/* ------------------------------------------------------------------ */
 /* Select                                                              */
 /* ------------------------------------------------------------------ */
 
@@ -617,10 +735,29 @@ function write(seeds, harvested) {
     seen.add(key); seenIds.add(s.trackId);
     kept.push(s);
   }
-  const merged = seeds.concat(kept);
+  // The non-film half. Appended after the film songs rather than mixed in, so
+  // the generated block reads film-then-not and a diff stays legible.
+  let indie = [];
+  if (!FILM_ONLY) {
+    console.log('\n--- non-film artists ---');
+    const raw = await harvestArtists();
+    const deduped = dropFilmDuplicates(raw, seeds.concat(kept));
+    indie = deduped.filter(s => {
+      const key = s.nTitle + '|' + s.nMovie;
+      if (seen.has(key) || seenIds.has(s.trackId)) return false;
+      seen.add(key); seenIds.add(s.trackId);
+      return true;
+    });
+    console.log('  ' + indie.length + ' non-film songs from ' +
+                new Set(indie.map(s => s.seededAs)).size + ' artists' +
+                (raw.length - deduped.length
+                  ? ' (' + (raw.length - deduped.length) + ' dropped as film songs in disguise)' : ''));
+  }
 
-  console.log('  ' + merged.length + ' songs (' + seeds.length + ' seeds + ' +
-              (merged.length - seeds.length) + ' harvested)');
+  const merged = seeds.concat(kept, indie);
+
+  console.log('\n  ' + merged.length + ' songs (' + seeds.length + ' seeds + ' +
+              kept.length + ' film + ' + indie.length + ' non-film)');
   console.log('  ' + chosen.filter(s => s.trackNumber <= 3).length + ' of ' + chosen.length +
               ' chosen open their soundtrack; ' +
               chosen.filter(s => s.pop.bestOf).length + ' are on a best-of');
@@ -667,9 +804,9 @@ function write(seeds, harvested) {
               (dupeKeys.length ? ': ' + dupeKeys.slice(0, 8).join(', ') : ''));
 
   if (DRY) { console.log('\n  --dry, nothing written\n'); return; }
-  write(seeds, kept);
-  console.log('\n  wrote ' + seeds.length + ' seeds + ' + kept.length +
-              ' harvested to src/template.html\n');
+  write(seeds, kept.concat(indie));
+  console.log('\n  wrote ' + seeds.length + ' seeds + ' + kept.length + ' film + ' +
+              indie.length + ' non-film to src/template.html\n');
 })().catch(e => {
   console.error(e);
   process.exit(1);

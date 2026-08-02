@@ -81,6 +81,8 @@ an interrupted crawl resumes where it stopped.
 node build/harvest.js               harvest, then rewrite the catalog
 node build/harvest.js --dry         harvest and report, write nothing
 node build/harvest.js --composers 4 stop after N composers (a smoke run)
+node build/harvest.js --artists 4   stop after N non-film artists
+node build/harvest.js --film-only   skip the non-film harvest entirely
 ```
 
 Bollywood ships in soundtrack albums, so the catalog scales by harvesting
@@ -144,6 +146,54 @@ film's year. That is still only a floor, and a film whose every pressing is a
 reissue stays late; it is what stops reissued classics from being counted as new
 releases.
 
+### The non-film half
+
+About a fifth of the catalog is **not from a film** — indie, hip-hop and pop
+singles from twenty named artists. Those are harvested a completely different
+way, and the difference is instructive.
+
+The film path walks a composer's albums one request at a time, because the only
+reason to open an album is to read the FILM out of its name. A single has no
+film to read, so the non-film path skips albums entirely:
+
+```
+search?term=Anuv+Jain&entity=musicArtist    -> artistId          1 request
+lookup?id=<artistId>&entity=song&limit=200  -> up to 200 songs   1 request
+```
+
+**Two requests per artist rather than ~27.** There is no scoring either. The
+entire film pipeline — position, percentiles, era quotas — exists to solve
+selection under scarcity: which 1,200 of 7,576, and how to stop one era taking
+them all. Here the artists are named deliberately and the point is to get their
+catalogue, so there is nothing to select. Take the first twelve that survive the
+quality filters, in Apple's own order.
+
+Two things do need care:
+
+- **Variant filtering matters far more here.** Anuv Jain ships an acoustic cut
+  of nearly everything, and session series (Coke Studio, The Dewarists) re-record
+  songs that already exist under their own name. `BAD_TITLE` grew to cover them.
+- **These artists sing on soundtracks too.** Seeding Raghav Chaitanya pulled in
+  *Hua Main* with no film attached, so it shipped twice — once correctly as
+  *ANIMAL* and once as a non-film single. Two identities for one recording means
+  guessing the right film scores **wrong**, which is worse than not having the
+  song. A song is treated as a film duplicate when it shares both a title and a
+  performer with something on the film side. Title alone is not enough and must
+  not be used: AUR's *Shayad* and *Love Aaj Kal*'s *Shayad* really are different
+  songs, as are Zaeden's *Tere Bina* and *Guru*'s.
+
+Non-film songs carry an **empty `movie`**, which is the only marker they need.
+Since the film is what disambiguates colliding titles, and these have none,
+every song now carries a `context` — the film where there is one, the artist
+where there is not — and identity, waveform seeds and the typeahead all key off
+that instead. One flag at the top of the catalog turns the whole half off:
+
+```js
+window.INCLUDE_NON_FILM = true;   // false plays film songs only
+```
+
+With it off the pool drops from 1,383 to 1,164 and the catalog stays untouched.
+
 ### What didn't work
 
 Two better-sounding theories were measured here and both lost.
@@ -180,13 +230,13 @@ pwsh build/build.ps1 -Verify   # build, then run both suites
 ```
 
 ```
-test/test.js           55 checks — rules, normalisation, song identity, variant
+test/test.js           65 checks — rules, normalisation, song identity, variant
                        scoring, simulated games, and LIVE iTunes resolution over
                        JSONP: the whole catalog batched (1,164 ids in 6 requests)
                        and single songs by the runtime path
 test/test-offline.js   12 checks — simulates a CSP refusal; asserts both
                        resolution paths degrade in under 2s instead of hanging
-test/test-ui.js        47 checks — drives the real App component through whole
+test/test-ui.js        54 checks — drives the real App component through whole
                        rounds against a hand-rolled React. Blocked scenario: a
                        fixture catalog with a deliberate title collision.
                        Online scenario: lookups answer for real and one song is
