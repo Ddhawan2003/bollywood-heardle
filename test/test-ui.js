@@ -249,6 +249,19 @@ async function blockedScenario() {
   const answer = ui.CATALOG[0];                    // Math.random pinned to 0
   ok('round is under way', !!ui.byClass('transport'));
 
+  // The playable controls come first and the guess history last. Reversed, the
+  // six rows push the waveform and play button off a phone screen.
+  const order = [];
+  ui.find(n => {
+    const c = n.props && n.props.className;
+    if (c === 'stage' || c === 'transport' || c === 'rows') order.push(c);
+    return false;
+  });
+  ok('controls precede the guess history',
+     order.indexOf('rows') === order.length - 1 &&
+     order.indexOf('stage') < order.indexOf('rows') &&
+     order.indexOf('transport') < order.indexOf('rows'), order.join(' > '));
+
   // Both fixture songs are called "Tere Bina". Typing it must NOT be
   // submittable on its own - the player has to say which film.
   ui.type('Tere Bina');

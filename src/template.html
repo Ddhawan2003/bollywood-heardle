@@ -2852,20 +2852,6 @@ button:disabled { cursor: not-allowed; }
     return frame(h("div", { className: "shell" },
       Masthead(),
 
-      h("div", { className: "rows" },
-        Array.apply(null, Array(MAX_ATTEMPTS)).map(function (_, i) {
-          var g = guesses[i];
-          if (!g) {
-            return h("div", { key: i, className: "row row-empty" },
-              h("span", { className: "row-text" }, ""),
-              h("span", { className: "row-tag" }, label(STEPS[i])));
-          }
-          return h("div", { key: i, className: "row row-" + g.type },
-            h("span", { className: "row-text" }, g.type === "skip" ? "Skipped" : g.title),
-            h("span", { className: "row-tag" }, label(STEPS[i])));
-        })
-      ),
-
       h("div", { className: "stage" },
         h(Waveform, { shape: shape, unlocked: unlocked, head: headFrac }),
         h("div", { className: "ticks" }, STEPS.map(function (s, i) {
@@ -2905,6 +2891,24 @@ button:disabled { cursor: not-allowed; }
         onGiveUp: giveUp,
         skipLabel: skipLabel
       }),
+
+      // Below the controls, not above them. The waveform, the play button and
+      // the guess box are what a round is actually played with; the history of
+      // what you already got wrong is reference material, and putting it first
+      // pushed the whole playable section down the screen on a phone.
+      h("div", { className: "rows" },
+        Array.apply(null, Array(MAX_ATTEMPTS)).map(function (_, i) {
+          var g = guesses[i];
+          if (!g) {
+            return h("div", { key: i, className: "row row-empty" },
+              h("span", { className: "row-text" }, ""),
+              h("span", { className: "row-tag" }, label(STEPS[i])));
+          }
+          return h("div", { key: i, className: "row row-" + g.type },
+            h("span", { className: "row-text" }, g.type === "skip" ? "Skipped" : g.title),
+            h("span", { className: "row-tag" }, label(STEPS[i])));
+        })
+      ),
 
       Foot()
     ));
