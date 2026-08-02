@@ -104,7 +104,7 @@ by name, and a compilation's songs become popularity *signal* instead of
 catalog candidates.
 
 Popularity matters because the harvest finds ~7,600 songs and the game ships
-~1,200, so *something* has to choose — and a catalog of uniformly obscure songs
+~1,240, so *something* has to choose — and a catalog of uniformly obscure songs
 is a vocabulary test, not a game. What ranks them is **position**: where a song
 sits on its soundtrack, and where that soundtrack sits in Apple's ordering of
 the composer's albums. A soundtrack opens with the song the film is selling, and
@@ -127,16 +127,25 @@ Position ranks songs honestly *within* an era; it says nothing about how many
 slots an era deserves, so the quotas are set explicitly:
 
 ```
-2020s      293 / 300      2000s      300 / 300
-2010s      300 / 300      pre-2000   264 / 300
+2020s      340 / 340      2000s      260 / 260
+2010s      520 / 520      pre-2000   110 / 110
 ```
 
-The spans are deliberately unequal and it shows. `pre-2000` skims the best of
-six decades, while the 2020s quota is drawn from about six years and so reaches
-much further down its own ranking — the recent bucket is the obscure one. Both
-short-falls are the pool running out, not a cap biting.
+**The quotas are weighted hard toward recent music**, because most players are
+in their twenties and a song from before they were born is not a hard round, it
+is a dead one. With the non-film half counted too, **74% of the catalog is
+post-2010**.
 
-Alongside the quotas: 3 songs per film globally, and 20 per composer *per era*,
+They are not weighted as hard as they could be, and the reason is a quality
+cliff. The spans are deliberately unequal: `pre-2000` skims the best of six
+decades while the 2020s quota is drawn from about six years, so the recent
+bucket reaches much further down its own ranking. Pushed to 450 the 2020s does
+fill, but its worst entries fall to a score of 32 — deep cuts nobody of any age
+knows — while the 2000s at 260 still has a floor of 88. Past roughly 340 the
+era stops buying recognisable songs and starts buying filler, so that is where
+it sits.
+
+Alongside the quotas: 4 songs per film globally, and 35 per composer *per era*,
 so a prolific composer can appear across all four without owning any one.
 
 Era needs a year, and Apple's per-track date is the date of **that pressing** —
@@ -192,7 +201,7 @@ that instead. One flag at the top of the catalog turns the whole half off:
 window.INCLUDE_NON_FILM = true;   // false plays film songs only
 ```
 
-With it off the pool drops from 1,383 to 1,164 and the catalog stays untouched.
+With it off the pool drops from 1,456 to 1,237 and the catalog stays untouched.
 
 ### What didn't work
 
@@ -232,7 +241,7 @@ pwsh build/build.ps1 -Verify   # build, then run both suites
 ```
 test/test.js           65 checks — rules, normalisation, song identity, variant
                        scoring, simulated games, and LIVE iTunes resolution over
-                       JSONP: the whole catalog batched (1,164 ids in 6 requests)
+                       JSONP: the whole catalog batched (1,456 ids in 8 requests)
                        and single songs by the runtime path
 test/test-offline.js   12 checks — simulates a CSP refusal; asserts both
                        resolution paths degrade in under 2s instead of hanging

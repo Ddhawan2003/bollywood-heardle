@@ -95,8 +95,8 @@ const CONFIG = {
   // no amount of rescoring could reach them; they were never fetched.
   albumsPerComposer: 60,
   songsPerArtist: 12,      // non-film artists, in Apple's own order
-  songsPerFilm: 3,         // no single soundtrack may dominate
-  songsPerComposer: 20,    // nor may one composer - applied per era, not overall
+  songsPerFilm: 4,         // no single soundtrack may dominate
+  songsPerComposer: 35,    // nor may one composer - applied per era, not overall
   delayMs: 3200,           // ~19 requests/minute, under Apple's soft limit
 };
 
@@ -111,10 +111,10 @@ const CONFIG = {
 // so it reaches much further down its own ranking. Expect the recent bucket to
 // be the obscure one, and expect it to be the one that falls short.
 const ERAS = [
-  { name: '2020s',    from: 2020, to: 9999, quota: 300 },
-  { name: '2010s',    from: 2010, to: 2019, quota: 300 },
-  { name: '2000s',    from: 2000, to: 2009, quota: 300 },
-  { name: 'pre-2000', from: 1,    to: 1999, quota: 300 },
+  { name: '2020s',    from: 2020, to: 9999, quota: 340 },
+  { name: '2010s',    from: 2010, to: 2019, quota: 520 },
+  { name: '2000s',    from: 2000, to: 2009, quota: 260 },
+  { name: 'pre-2000', from: 1,    to: 1999, quota: 110 },
   // Apple gave no usable date. Kept, but not allowed to crowd out a real era.
   { name: 'undated',  from: 0,    to: 0,    quota: 40  },
 ];
@@ -786,10 +786,17 @@ function write(seeds, harvested) {
     return [...m.entries()].sort((a, b) => String(a[0]).localeCompare(String(b[0])));
   };
 
-  console.log('\n  by decade (earliest pressing seen, so classics can still read late):');
-  bucket(chosen, s => (s.year ? Math.floor(s.year / 10) * 10 + 's' : 'unknown'))
+  // Both halves, because what a player actually meets is the whole pool - and
+  // the non-film half is almost entirely recent, which shifts the real balance
+  // well past what the film quotas alone suggest.
+  const shipped = chosen.concat(indie);
+  console.log('\n  by decade, whole catalog (earliest pressing seen, so classics read late):');
+  bucket(shipped, s => (s.year ? Math.floor(s.year / 10) * 10 + 's' : 'unknown'))
     .forEach(([d, n]) => console.log('    ' + String(d).padEnd(9) +
       String(n).padStart(4) + '  ' + '#'.repeat(Math.round(n / 8))));
+  const recent = shipped.filter(s => s.year >= 2010).length;
+  console.log('    post-2010: ' + recent + ' of ' + shipped.length +
+              ' (' + Math.round(100 * recent / shipped.length) + '%)');
 
   console.log('\n  by composer:');
   bucket(chosen, s => s.composer).sort((a, b) => b[1] - a[1])
