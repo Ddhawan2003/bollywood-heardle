@@ -230,72 +230,64 @@ ok('final attempt unlocks the full 16s', T.STEPS[5] === 16 && unlockAt(5) === 1)
 // instant, which is why this only ever broke on a phone: streaming Apple's CDN,
 // the playback loop read the previous snippet's position, so a clip started
 // halfway and stopped early. Replaying the same snippet halted on frame one.
-// iOS advances media currentTime in ~0.25s steps, so a 0.5s snippet reads only
-// 0, 0.25, 0.5. Painted straight, the playhead jumps twice and looks stalled.
-console.log('\n--- the playhead is smooth over a coarse currentTime ---');
+// iOS advances media currentTime in ~0.25s steps and not on a metronome, so
+// neither painting it directly nor projecting from it gives a smooth bar.
+// Media plays at 1x, so elapsed real time is the position.
+console.log('\n--- the playhead runs on wall clock ---');
 {
   let clock = 0;
   const el = { currentTime: 0, paused: false };
   const pos = T.makePosition(el, () => clock);
+  pos.start();
 
-  ok('reads the real value the moment it changes', pos.read() === 0);
-
-  // 100ms later the element still says 0 - iOS has not ticked yet.
+  // The element is still reporting 0 throughout all of this.
   clock = 100;
   const a = pos.read();
-  ok('keeps moving between updates', a > 0.09 && a < 0.11, a);
-
-  clock = 240;
+  clock = 200;
   const b = pos.read();
-  ok('still moving, and monotonic', b > a && b > 0.23 && b < 0.25, b);
-
-  // Now the element jumps a whole quarter-second at once.
-  clock = 250; el.currentTime = 0.25;
+  clock = 240;
   const c = pos.read();
-  ok('re-anchors to the element rather than drifting past it', c === 0.25);
+  ok('advances smoothly while the element has not ticked',
+     Math.abs(a - 0.1) < 0.001 && Math.abs(b - 0.2) < 0.001 && Math.abs(c - 0.24) < 0.001,
+     [a, b, c].join(' '));
 
-  clock = 350;
+  // The element now jumps a whole quarter-second at once. The bar must not
+  // flinch - this is the step that used to be visible.
+  clock = 250; el.currentTime = 0.25;
   const d = pos.read();
-  ok('interpolates on from the new anchor', d > 0.34 && d < 0.36, d);
+  ok('a coarse jump in the element does not move the bar',
+     Math.abs(d - 0.25) < 0.001, d);
 
-  // The steps do not arrive on a metronome. Interpolating past where the next
-  // one lands and then reporting the element's value would snap the bar
-  // BACKWARDS - jitter, which is worse than the stepping it replaced.
-  {
-    let c2 = 0;
-    const e2 = { currentTime: 0, paused: false };
-    const p2 = T.makePosition(e2, () => c2);
-    p2.read();
-    c2 = 300;
-    const ahead = p2.read();               // projected well past 0.25
-    c2 = 310; e2.currentTime = 0.25;       // reality lands behind the projection
-    const after = p2.read();
-    ok('never reports a position earlier than one already shown',
-       after >= ahead, ahead + ' then ' + after);
-  }
+  clock = 251;
+  ok('and it keeps running straight through', pos.read() > d);
 
-  // A stalled element must not let the projection run away on its own.
-  {
-    let c3 = 0;
-    const e3 = { currentTime: 1, paused: false };
-    const p3 = T.makePosition(e3, () => c3);
-    p3.read();
-    c3 = 10000;                            // ten seconds with no update at all
-    const runaway = p3.read();
-    ok('projection is capped, not unbounded', runaway <= 1 + 0.36, runaway);
-  }
+  // A late step used to make the projection overshoot and then wait, which is
+  // what turned a regular stutter into sporadic freezes.
+  clock = 400; el.currentTime = 0.25;      // the 0.5 step is late
+  const e = pos.read();
+  clock = 500; el.currentTime = 0.5;       // it finally lands
+  const f = pos.read();
+  ok('a late step causes neither a freeze nor a snap back',
+     f > e && Math.abs(f - 0.5) < 0.001, e + ' then ' + f);
 
-  // Never invent progress the audio is not making.
+  // Genuinely stalled audio must stop the bar: painting on would be a lie.
+  clock = 1300;                            // 800ms with no movement at all
+  ok('a real stall stops the bar', pos.read() === 0.5, pos.read());
+
+  // ... and a pause stops it immediately, without waiting out the stall window.
   el.paused = true;
-  clock = 900;
-  const held = pos.read();
-  ok('a paused element stops advancing', held === d, held + ' vs ' + d);
+  clock = 1350;
+  ok('a paused element stops at once', pos.read() === 0.5);
+}
 
-  el.paused = false;
-  pos.reset();
-  el.currentTime = 0;
-  clock = 1000;
-  ok('reset clears the floor for the next play', pos.read() === 0);
+{
+  // start() re-origins, so the next snippet does not inherit the last one's clock.
+  let clock = 5000;
+  const el = { currentTime: 0, paused: false };
+  const pos = T.makePosition(el, () => clock);
+  pos.start();
+  clock = 5100;
+  ok('start re-origins for the next play', Math.abs(pos.read() - 0.1) < 0.001, pos.read());
 }
 
 console.log('\n--- rewinding waits for the seek to land ---');

@@ -2447,31 +2447,47 @@ html, body { overflow-x: hidden; }
   // 0, then 0.25, then 0.5, so a playhead painted straight from it jumps twice
   // and reads as a stall at each step. That is the stutter.
   //
-  // currentTime stays the authority; wall clock only fills the gaps between its
-  // updates, and every real update re-anchors it so drift cannot accumulate.
+  // So the playhead is driven by WALL CLOCK, not by currentTime.
   //
-  // The reading is MONOTONIC, and that is not a nicety. Those coarse steps do
-  // not arrive on a metronome: interpolate past where the next one lands and
-  // the naive reading snaps backwards, so the bar jitters forward and back
-  // instead of merely stepping. That is worse than the stutter it replaced.
-  // Overshoot therefore holds until reality catches up, which reads as a pause
-  // rather than a rewind, and projection is capped at roughly one step so a
-  // stalled element cannot run the bar away on its own.
-  var MAX_PROJECTION = 0.35;
+  // Two earlier attempts got this wrong. Painting currentTime directly steps
+  // the bar in visible quarter-second jumps. Filling the gaps by projecting
+  // from the last update is worse: the steps do not arrive on a metronome, so
+  // the projection overshoots by a varying amount and then has to wait for
+  // reality - trading a regular stutter for sporadic freezes.
+  //
+  // Wall clock has neither problem. Media plays at 1x, so once playback has
+  // actually begun, elapsed real time IS the position, and it is smooth by
+  // construction. currentTime keeps the two jobs it is good at: saying when
+  // playback truly started, and revealing a genuine stall.
+  var STALL_MS = 700;     // no movement at all for this long means really stalled
+  var RESYNC = 0.6;       // ... and this far apart means wall clock has lost it
 
   function makePosition(el, clock) {
     var now = clock || Date.now;
-    var lastT = -1, lastAt = 0, shown = 0;
+    var origin = 0, from = 0, lastT = -1, lastTAt = 0;
     return {
-      reset: function () { lastT = -1; shown = 0; },
+      // Called when playback is confirmed running, not when play() was asked
+      // for: anchoring at the request would count the buffering as progress.
+      start: function () {
+        origin = now();
+        from = el.currentTime || 0;
+        lastT = -1;
+        lastTAt = origin;
+      },
       read: function () {
         var t = el.currentTime, n = now();
-        if (t !== lastT) { lastT = t; lastAt = n; }
-        var raw = el.paused
-          ? t
-          : t + Math.min((n - lastAt) / 1000, MAX_PROJECTION);
-        if (raw > shown) shown = raw;
-        return shown;
+        if (t !== lastT) { lastT = t; lastTAt = n; }
+
+        // The element has not moved at all for a good while: the audio really
+        // has stopped, so the bar should stop with it rather than paint
+        // progress that is not happening.
+        if (el.paused || n - lastTAt > STALL_MS) return t;
+
+        var wall = from + (n - origin) / 1000;
+        // Drifted implausibly far from the element - a seek, a stall that
+        // recovered - so re-anchor rather than stay confidently wrong.
+        if (Math.abs(wall - t) > RESYNC) { origin = n; from = t; return t; }
+        return wall;
       }
     };
   }
@@ -2493,11 +2509,12 @@ html, body { overflow-x: hidden; }
     // that has not begun. The timeout is the usual escape hatch.
     function startLoop() {
       if (raf) return;
-      position.reset();
       function go() {
         el.removeEventListener("playing", go);
         if (timer) clearTimeout(timer);
-        if (!raf) raf = requestAnimationFrame(loop);
+        if (raf) return;
+        position.start();          // the wall-clock origin is THIS moment
+        raf = requestAnimationFrame(loop);
       }
       if (!el.paused && el.currentTime > 0) return go();
       el.addEventListener("playing", go);
