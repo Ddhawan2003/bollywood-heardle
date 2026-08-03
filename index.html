@@ -2758,19 +2758,29 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
   //
   // currentTime stays the authority; wall clock only fills the gaps between its
   // updates, and every real update re-anchors it so drift cannot accumulate.
-  // Interpolating while PAUSED would run the bar on through a buffering stall,
-  // so that case returns the real value and lets the bar sit still, which at
-  // least tells the truth.
+  //
+  // The reading is MONOTONIC, and that is not a nicety. Those coarse steps do
+  // not arrive on a metronome: interpolate past where the next one lands and
+  // the naive reading snaps backwards, so the bar jitters forward and back
+  // instead of merely stepping. That is worse than the stutter it replaced.
+  // Overshoot therefore holds until reality catches up, which reads as a pause
+  // rather than a rewind, and projection is capped at roughly one step so a
+  // stalled element cannot run the bar away on its own.
+  var MAX_PROJECTION = 0.35;
+
   function makePosition(el, clock) {
     var now = clock || Date.now;
-    var lastT = -1, lastAt = 0;
+    var lastT = -1, lastAt = 0, shown = 0;
     return {
-      reset: function () { lastT = -1; },
+      reset: function () { lastT = -1; shown = 0; },
       read: function () {
         var t = el.currentTime, n = now();
-        if (t !== lastT) { lastT = t; lastAt = n; return t; }
-        if (el.paused) return t;
-        return t + (n - lastAt) / 1000;
+        if (t !== lastT) { lastT = t; lastAt = n; }
+        var raw = el.paused
+          ? t
+          : t + Math.min((n - lastAt) / 1000, MAX_PROJECTION);
+        if (raw > shown) shown = raw;
+        return shown;
       }
     };
   }

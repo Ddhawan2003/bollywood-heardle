@@ -258,16 +258,44 @@ console.log('\n--- the playhead is smooth over a coarse currentTime ---');
   const d = pos.read();
   ok('interpolates on from the new anchor', d > 0.34 && d < 0.36, d);
 
+  // The steps do not arrive on a metronome. Interpolating past where the next
+  // one lands and then reporting the element's value would snap the bar
+  // BACKWARDS - jitter, which is worse than the stepping it replaced.
+  {
+    let c2 = 0;
+    const e2 = { currentTime: 0, paused: false };
+    const p2 = T.makePosition(e2, () => c2);
+    p2.read();
+    c2 = 300;
+    const ahead = p2.read();               // projected well past 0.25
+    c2 = 310; e2.currentTime = 0.25;       // reality lands behind the projection
+    const after = p2.read();
+    ok('never reports a position earlier than one already shown',
+       after >= ahead, ahead + ' then ' + after);
+  }
+
+  // A stalled element must not let the projection run away on its own.
+  {
+    let c3 = 0;
+    const e3 = { currentTime: 1, paused: false };
+    const p3 = T.makePosition(e3, () => c3);
+    p3.read();
+    c3 = 10000;                            // ten seconds with no update at all
+    const runaway = p3.read();
+    ok('projection is capped, not unbounded', runaway <= 1 + 0.36, runaway);
+  }
+
   // Never invent progress the audio is not making.
   el.paused = true;
   clock = 900;
-  ok('a paused element does not interpolate', pos.read() === 0.25, pos.read());
+  const held = pos.read();
+  ok('a paused element stops advancing', held === d, held + ' vs ' + d);
 
   el.paused = false;
   pos.reset();
   el.currentTime = 0;
   clock = 1000;
-  ok('reset re-anchors for the next play', pos.read() === 0);
+  ok('reset clears the floor for the next play', pos.read() === 0);
 }
 
 console.log('\n--- rewinding waits for the seek to land ---');
