@@ -65,15 +65,32 @@ const CACHE = path.join(__dirname, '.harvest-cache');
 // Singh is a narrower game than it looks.
 const COMPOSERS = [
   'A.R. Rahman', 'Pritam', 'Shankar-Ehsaan-Loy', 'Vishal-Shekhar', 'Amit Trivedi',
-  'Nadeem-Shravan', 'Jatin-Lalit', 'Anu Malik', 'R. D. Burman', 'Laxmikant-Pyarelal',
-  'Sachin-Jigar', 'Mithoon', 'Tanishk Bagchi', 'Himesh Reshammiya', 'Salim-Sulaiman',
-  'Ismail Darbar', 'Sanjay Leela Bhansali', 'Jeet Gannguli', 'Rajesh Roshan',
-  'Kalyanji-Anandji', 'Shankar Jaikishan', 'Bappi Lahiri', 'Ankit Tiwari', 'Sajid-Wajid',
-  // The 2020s are their own era and the names above barely work in it. Without
-  // these the catalog stops around 2019: Jawan and Animal have no composer on
-  // the list at all.
-  'Anirudh Ravichander', 'Sachet-Parampara', 'Vishal Mishra', 'Amaal Mallik',
+  'Sachin-Jigar', 'Tanishk Bagchi', 'Himesh Reshammiya',
+  'Salim-Sulaiman', 'Ismail Darbar', 'Ankit Tiwari', 'Sajid-Wajid',
+  'Sachet-Parampara', 'Vishal Mishra', 'Amaal Mallik',
+  // Small modern soundtrack credits that were never seeded, so their film work
+  // could only arrive by accident, as a featured credit on someone else's album.
+  'Abhijit Vaghani', 'Anurag Vashisht', 'Aman Pant', 'Akhil Sachdeva', 'B Praak',
 ];
+
+// Deliberately NOT harvested. These twelve shipped 390 of the previous 1,237
+// film songs and were cut by hand, not by score: mostly pre-2000 catalogue that
+// a player in their twenties has no reason to recognise. Listed rather than
+// deleted so the next person can see the choice was made and put one back:
+//
+// Nadeem-Shravan joined them later, and on evidence rather than taste: in a
+// blind 30-song sample drawn the way the app deals them, the player recognised
+// 15 - and went 0 for 4 on Nadeem-Shravan, the worst score of any composer in
+// the draw. They were the last pre-2010 name still seeded, worth 68 songs.
+//
+//   Anu Malik 76, Mithoon 74, Nadeem-Shravan 68, Jeet Gannguli 39, Rajesh Roshan 37,
+//   Laxmikant-Pyarelal 35, Bappi Lahiri 33, R. D. Burman 24, Jatin-Lalit 20,
+//   Shankar Jaikishan 15, Kalyanji-Anandji 14, Sanjay Leela Bhansali 13,
+//   Anirudh Ravichander 10
+//
+// Anirudh is the one with a real cost attached: he is Jawan, so the 2020s lose
+// their single biggest soundtrack. The rest of that era is carried by Pritam,
+// Tanishk Bagchi, Sachin-Jigar, Vishal Mishra, Amaal Mallik and Sachet-Parampara.
 
 // Hindi and Punjabi music that is NOT from a film: indie, hip-hop, pop singles.
 // These are harvested a completely different way - see harvestArtists - because
@@ -85,6 +102,33 @@ const ARTISTS = [
   'MC STAN', 'KR$NA', 'DIVINE', 'Raftaar', 'Karan Aujla',
   'Dino James', 'Yashraj', 'Abdul Hannan', 'Ritviz', 'When Chai Met Toast',
   'Osho Jain', 'Raghav Chaitanya', 'Aditya A', 'Mitraz', 'Zaeden',
+  // Punjabi-pop and the singles side of playback singers who release outside
+  // film. NON_HINDI_LOOSE deliberately lets Punjabi through, which is most of
+  // the point of Guru Randhawa, Imran Khan and Ikky.
+  'Guru Randhawa', 'Badshah', 'Darshan Raval', 'B Praak', 'Tony Kakkar',
+  'Imran Khan', 'Atif Aslam', 'Neha Kakkar', 'Tulsi Kumar', 'Akhil Sachdeva',
+  'Ikky', 'Dominique Cerejo',
+];
+
+// Playback singers, harvested by harvestSingers - a THIRD path, and the only one
+// seeded by who SANG a song rather than who wrote it.
+//
+// The film path reaches a singer only by accident: it walks composers, so a
+// singer arrives in the catalog exactly as often as the seeded composers happen
+// to have hired them. That works for the ubiquitous - Arijit landed 115 songs
+// without ever being named - and fails badly for anyone whose canon sits with
+// composers we do not seed. Atif Aslam had 6.
+//
+// Several of these names are on ARTISTS as well. That is deliberate, not a
+// duplicate: the two paths split the same artist's catalogue down the middle,
+// harvestArtists keeping the singles and this keeping the film songs.
+const SINGERS = [
+  'Arijit Singh', 'Shreya Ghoshal', 'Sonu Nigam', 'KK', 'Mohit Chauhan',
+  'Shaan', 'Armaan Malik', 'Neeti Mohan', 'Nikhita Gandhi', 'Benny Dayal',
+  'Vishal Dadlani', 'Mika Singh', 'Sachet Tandon', 'Rahat Fateh Ali Khan',
+  'Neeraj Shridhar', 'Atif Aslam', 'Darshan Raval', 'Tulsi Kumar',
+  'Neha Kakkar', 'Dominique Cerejo', 'Amitabh Bhattacharya', 'Akhil Sachdeva',
+  'B Praak', 'Guru Randhawa', 'Badshah',
 ];
 
 const CONFIG = {
@@ -93,10 +137,35 @@ const CONFIG = {
   // prolific moderns - Pritam's Brahmastra is his album #25, Animal #28, Bhool
   // Bhulaiyaa 2 #29, Dunki #36. Every one of those is past a cutoff of 20, so
   // no amount of rescoring could reach them; they were never fetched.
-  albumsPerComposer: 60,
-  songsPerArtist: 12,      // non-film artists, in Apple's own order
-  songsPerFilm: 4,         // no single soundtrack may dominate
-  songsPerComposer: 35,    // nor may one composer - applied per era, not overall
+  //
+  // Raised again to 150 when the composer list was cut from 28 to 16. Half the
+  // seeds went away, so the catalog has to come from MORE FILMS PER COMPOSER
+  // rather than more songs per film - see songsPerFilm below.
+  albumsPerComposer: 150,
+  // 12 down to 8, for the same reason the era quotas came down: Apple returns an
+  // artist most-prominent-first, so songs 9 through 12 are the tail of a named
+  // artist's catalogue and the least likely to be recognised.
+  songsPerArtist: 8,
+  songsPerSinger: 25,      // film songs reached via the singer rather than the composer
+
+  // Lowered from 4 to widen the catalog across soundtracks rather than dig into
+  // them: at 4, two thirds of the film side was track 2, 3 or 4, and 185 films
+  // contributed the full four. It bought 100 more distinct films, which is worth
+  // having on its own.
+  //
+  // It was argued at the time as the fix for recognisability, on the theory that
+  // a soundtrack opens with the song the film is selling. That theory has since
+  // been tested against 60 hand-marked songs and it does not hold: pooled, the
+  // player knew 54% of track 1, 53% of track 2 and 47% of track 3+. Position is
+  // close to flat. Two 30-song samples read in opposite directions on it, which
+  // is what a sample that size does. Keep the number for the breadth, not for a
+  // recognisability claim it cannot support.
+  songsPerFilm: 3,
+
+  // Effectively off. It existed to stop one composer owning an era back when
+  // there were 28 of them; with 16 hand-picked names, a composer taking a large
+  // share of an era is the intended outcome, not a failure.
+  songsPerComposer: 999,
   delayMs: 3200,           // ~19 requests/minute, under Apple's soft limit
 };
 
@@ -110,13 +179,41 @@ const CONFIG = {
 // skims the best of six decades; the 2020s quota is drawn from about six years,
 // so it reaches much further down its own ranking. Expect the recent bucket to
 // be the obscure one, and expect it to be the one that falls short.
+// Reweighted when the composer list was cut to 16. pre-2000 fell from 110 to 40
+// because with the old guard gone that quota was being filled almost entirely by
+// deep Nadeem-Shravan album cuts - Salaami, Tadipaar, Hameshaa - which is the
+// exact 1990s obscurity the cut was meant to remove, re-entering by the back
+// door. 'undated' went to 0: it has never once filled.
+// Cut again, hard, to land the whole catalog near 1,200. The blind sample is
+// what set the size: of 15 misses, 7 came from Nadeem-Shravan and non-Hindi
+// contamination and are dealt with above, but the other 8 were ordinary Hindi
+// album tracks - real, modern, simply not hits. Nothing about scoring fixes
+// those, because the quota is what forces the reach: 650 slots for the 2010s has
+// to be filled by SOMETHING, and past the famous few hundred it is buying album
+// tracks. The only honest fix for the tail is to stop asking for it.
+//
+// The 2020s is cut proportionally hardest because its tail was the worst - at a
+// quota of 450 its weakest entries scored 16, against 74 for the 2000s at 260.
+//
+// Then cut much harder still, and this one reverses the assumption the whole
+// file was built on: that a player in their twenties wants recent music, so the
+// recent quota should be the largest. Measured over 60 songs drawn the way the
+// app deals them and marked by hand, it is not what happens -
+//
+//   2010s 63%   2020s 48%   2000s 40%   pre-2000 33%
+//
+// - and the 2020s came second WORST, below the 2000s, while being the largest
+// slice of the catalog. The misses were not obscure album tracks either; they
+// were lead songs from mid-tier recent films (Shiddat, Uunchai, Radhe Shyam,
+// An Action Hero). Far more films release now than any one person tracks, so a
+// large 2020s quota reaches straight into films nobody saw. The 2010s is drawn
+// from a decade already filtered by what stuck, which is why it wins.
 const ERAS = [
-  { name: '2020s',    from: 2020, to: 9999, quota: 340 },
-  { name: '2010s',    from: 2010, to: 2019, quota: 520 },
-  { name: '2000s',    from: 2000, to: 2009, quota: 260 },
-  { name: 'pre-2000', from: 1,    to: 1999, quota: 110 },
-  // Apple gave no usable date. Kept, but not allowed to crowd out a real era.
-  { name: 'undated',  from: 0,    to: 0,    quota: 40  },
+  { name: '2020s',    from: 2020, to: 9999, quota: 180 },
+  { name: '2010s',    from: 2010, to: 2019, quota: 540 },
+  { name: '2000s',    from: 2000, to: 2009, quota: 170 },
+  { name: 'pre-2000', from: 1,    to: 1999, quota: 30  },
+  { name: 'undated',  from: 0,    to: 0,    quota: 0   },
 ];
 
 CONFIG.target = ERAS.reduce((n, e) => n + e.quota, 0);
@@ -128,7 +225,11 @@ const flag = (name, fallback) => {
 };
 const DRY = argv.includes('--dry');
 CONFIG.target = flag('target', CONFIG.target);
+// Lets a dry run stay inside the cache: the previous crawl fetched 60 albums per
+// composer, so --albums 60 --dry reports in seconds and makes no requests.
+CONFIG.albumsPerComposer = flag('albums', CONFIG.albumsPerComposer);
 const COMPOSER_LIMIT = flag('composers', COMPOSERS.length);
+const SINGER_LIMIT = flag('singers', SINGERS.length);
 const ARTIST_LIMIT = flag('artists', ARTISTS.length);
 const FILM_ONLY = argv.includes('--film-only');   // skip the non-film harvest
 
@@ -200,6 +301,16 @@ const BAD_TITLE = new RegExp('\\b(' + [
   'reprise', 'karaoke', 'encore', 'mashup', 'medley', 'recreated', 'dialogues',
   'dialogue', 'live', 'slowed', 'theme', 'interlude', 'score', 'promo',
   'jhankar', 'remastered',
+  // Streaming-era repackaging of a song that already exists under its own name.
+  // All either multi-word or rare enough as single tokens to be safe against a
+  // real Hindi title.
+  'refix', 'rework', 'sped up', 'nightcore', 'bass boosted', 'radio edit',
+  'revisited',
+  // Bare "mix" as well as the named variants. 'remix' alone missed a whole
+  // remix album: Dilwale - Celebration Party Mixes shipped Gerua, Tukur Tukur
+  // and Manma Emotion Jaage as "(Desi Hip Hop Mix) [DJ Shilpi Mix]". Measured
+  // against the shipped catalog this drops six songs and every one is a remix.
+  'mix', 'mixes',
   // Session and showcase series re-record songs that already exist under their
   // own name. Rare on soundtracks, constant in indie: Anuv Jain ships an
   // acoustic cut of nearly everything.
@@ -207,6 +318,27 @@ const BAD_TITLE = new RegExp('\\b(' + [
 ].join('|') + ')\\b', 'i');
 
 const NON_HINDI = /\b(telugu|tamil|kannada|malayalam|punjabi|bhojpuri|marathi|bengali|gujarati)\b/i;
+
+// NON_HINDI can only read the title and the film NAME, which is not where the
+// problem announces itself. A seeded composer scores far more than Hindi cinema:
+// Rahman's Tamil catalogue, Tanishk Bagchi's Hindi dubs of Kannada films, B
+// Praak's Punjabi cinema, web-series soundtracks, and Rahman's score for Pelé, a
+// Brazilian football documentary. Not one of those says "Tamil" or "Kannada" in
+// its film name - "KGF Chapter 1" and "Pelé" sail straight through - and they
+// measured at 4% of the shipped catalog.
+//
+// Apple's own genre tag is the field that actually knows. On the film side it is
+// overwhelmingly decisive: 1,308 of 1,407 film songs came back Bollywood, and
+// essentially all the contamination sat in the remaining 99. Anything tagged
+// otherwise also sweeps up instrumental score cues, which arrive as Soundtrack -
+// Dunki (Original Score) shipped "Escape from Hospital" as a guessable song.
+const FILM_GENRE = /^bollywood$/i;
+
+// The non-film half needs the opposite treatment: Punjabi pop is half the point
+// of seeding Karan Aujla and Guru Randhawa, and the hip-hop artists are tagged
+// every which way, so it names what to REJECT rather than what to keep.
+const NON_FILM_BAD_GENRE =
+  /^(tamil|telugu|kannada|malayalam|marathi|bengali|gujarati|bhojpuri|regional indian|devotional|christian|new age|classical|tv soundtrack)/i;
 
 // The non-film path uses this instead. Punjabi is deliberately absent: a Hindi
 // film soundtrack labelled "Punjabi" is a regional dub and unwanted, but half
@@ -337,8 +469,14 @@ function looksLikeCompilation(tracks) {
   return marked / songs.length >= 0.5;
 }
 
+// A remix album is worth rejecting whole rather than track by track: its own
+// name says what it is, and relying on each title to confess leaves behind any
+// cut whose remixer did not bother to label it.
+const REMIX_ALBUM = /\b(mixes|remixes|party mix|club mix|dj mix|remixed)\b/i;
+
 function candidatesFrom(tracks, composer, albumName, rank, albumTotal) {
   const out = [];
+  if (REMIX_ALBUM.test(albumName || '')) return out;
 
   // Soundtracks carry alternate cuts beside the original - Tera Deedar Hua and
   // Tera Deedar Hua (From the Heart) sit on the same album. A parenthesised
@@ -359,6 +497,7 @@ function candidatesFrom(tracks, composer, albumName, rank, albumTotal) {
     if (!title || !movie) continue;
     if (BAD_TITLE.test(title)) continue;
     if (NON_HINDI.test(title) || NON_HINDI.test(movie)) continue;
+    if (!FILM_GENRE.test(t.primaryGenreName || '')) continue;
 
     const stem = norm(stripTrailingParen(title));
     if (stem && stem !== norm(title) && plain.has(stem)) continue;
@@ -434,7 +573,99 @@ async function harvest() {
                 String(comps.slice(0, 3).length + comped).padStart(2) + ' best-of');
   }
 
+  // Singer-seeded film songs join the same candidate pool rather than being
+  // appended afterwards, so they compete on score, and songsPerFilm and the era
+  // quotas govern them exactly as they govern everything else.
+  if (SINGER_LIMIT > 0) {
+    console.log('\n--- singers (film songs) ---');
+    const filmComposer = new Map();
+    for (const c of candidates) if (!filmComposer.has(c.nMovie)) filmComposer.set(c.nMovie, c.composer);
+    const extra = await harvestSingers(filmComposer);
+    const known = new Set(candidates.map(c => c.nTitle + '|' + c.nMovie));
+    const fresh = extra.filter(c => !known.has(c.nTitle + '|' + c.nMovie));
+    console.log('  ' + extra.length + ' film songs via singers, ' +
+                fresh.length + ' of them new to the pool');
+    candidates.push(...fresh);
+  }
+
   return { candidates, singles, bestOf };
+}
+
+/* ------------------------------------------------------------------ */
+/* Singer harvest (film songs, reached by who sang them)               */
+/* ------------------------------------------------------------------ */
+
+// Two requests per singer, and the exact mirror of harvestArtists below: that
+// one throws away every film song it sees, this one keeps nothing else.
+//
+// filmComposer maps a film already found by the composer path to its composer,
+// so a song arriving here for a film we already know inherits that composer and
+// therefore lands in the same datePerFilm group. Films nobody seeded - the whole
+// point of this path - fall back to the singer, which groups that singer's songs
+// from one film together and is all the year rule needs.
+async function harvestSingers(filmComposer) {
+  const out = [];
+  for (const name of SINGERS.slice(0, SINGER_LIMIT)) {
+    const id = await artistIdFor(name);
+    if (!id) { console.log('  ' + name.padEnd(22) + ' no artistId, skipped'); continue; }
+
+    const res = await lookup(id, 'song', 200);
+    const rows = (res.results || [])
+      .filter(t => t.wrapperType === 'track' && t.kind === 'song');
+    const span = Math.max(rows.length - 1, 1);
+    const seen = new Set();
+    let kept = 0;
+
+    for (let i = 0; i < rows.length && kept < CONFIG.songsPerSinger; i++) {
+      const t = rows[i];
+      if (!t.previewUrl || !t.trackId) continue;
+      if (!t.trackTimeMillis || t.trackTimeMillis < 60000) continue;
+
+      // A film song announces itself one of two ways: the title carries
+      // (From "Film") because it was lifted onto a single or compilation, or it
+      // sits on the soundtrack album itself and the album name holds the film.
+      const from = unpackFrom(t.trackName);
+      const onSoundtrack = /original motion picture|soundtrack|music from/i
+        .test(t.collectionName || '');
+      if (!from && !onSoundtrack) continue;
+
+      const title = tidyTitle(from ? from.title : t.trackName);
+      const movie = from ? from.film : filmFromAlbum(t.collectionName);
+      if (!title || !movie) continue;
+      if (BAD_TITLE.test(title)) continue;
+      if (NON_HINDI.test(title) || NON_HINDI.test(movie)) continue;
+      if (!FILM_GENRE.test(t.primaryGenreName || '')) continue;
+
+      const nTitle = norm(title), nMovie = norm(movie);
+      const key = nTitle + '|' + nMovie;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      kept++;
+
+      out.push({
+        title: title.trim(),
+        artist: cleanArtists(t.artistName, '') || t.artistName,
+        movie: movie,
+        trackId: t.trackId,
+        nTitle, nMovie,
+        trackNumber: t.trackNumber || 99,
+        // Loses every dedup tie in select() on purpose. Where the composer path
+        // already has this recording its copy is strictly better - real album
+        // position, real composer - so this path only ever contributes songs
+        // that path never reached.
+        albumRank: 9999,
+        // Apple returns an artist's songs most-prominent-first, which is the
+        // same signal albumPct carries on the composer path, so the two score on
+        // one scale rather than the singer path arriving unranked.
+        albumPct: i / span,
+        year: Number((t.releaseDate || '').slice(0, 4)) || 0,
+        composer: filmComposer.get(nMovie) || name,
+        seededAs: name,
+      });
+    }
+    console.log('  ' + name.padEnd(22) + String(kept).padStart(3) + ' film songs');
+  }
+  return out;
 }
 
 /* ------------------------------------------------------------------ */
@@ -473,6 +704,7 @@ async function harvestArtists() {
       const title = tidyTitle(t.trackName);
       if (!title || BAD_TITLE.test(title)) continue;
       if (NON_HINDI_LOOSE.test(title) || NON_HINDI_LOOSE.test(t.collectionName || '')) continue;
+      if (NON_FILM_BAD_GENRE.test(t.primaryGenreName || '')) continue;
 
       // These artists sing on soundtracks too - Raghav Chaitanya is on Animal,
       // and seeding him pulled Hua Main in here as though it had no film. A
@@ -573,14 +805,25 @@ function jitter(trackId) {
 // film's own year that these responses contain. It is still only a floor - a
 // film whose every pressing is a reissue stays late - but it is what stops
 // reissued classics from being counted as new releases.
+//
+// Keyed on film AND composer, never the film name alone. Hindi cinema reuses
+// titles relentlessly across generations, and a bare name merges the remakes:
+// Dilwale is Nadeem-Shravan in 1993 and Pritam in 2015, Guru is Bappi Lahiri in
+// 1988 and Rahman in 2006, Lootera is Laxmikant-Pyarelal in 1965 and Amit
+// Trivedi in 2013. Merged, the modern film inherits the older one's year and its
+// songs are backdated a whole era - Manma Emotion Jaage filed itself under
+// pre-2000. Since the crawl walks one composer at a time, the composer is
+// exactly the discriminator needed; the only case it still merges is a remake
+// scored by the same person, which is rare enough to live with.
 function datePerFilm(candidates) {
+  const key = c => c.nMovie + '|' + c.composer;
   const earliest = new Map();
   for (const c of candidates) {
     if (!c.year) continue;
-    const seen = earliest.get(c.nMovie);
-    if (!seen || c.year < seen) earliest.set(c.nMovie, c.year);
+    const seen = earliest.get(key(c));
+    if (!seen || c.year < seen) earliest.set(key(c), c.year);
   }
-  for (const c of candidates) c.year = earliest.get(c.nMovie) || c.year;
+  for (const c of candidates) c.year = earliest.get(key(c)) || c.year;
 }
 
 const decadeOf = s => (s.year ? Math.floor(s.year / 10) * 10 : 0);

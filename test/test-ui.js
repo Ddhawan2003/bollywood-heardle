@@ -43,7 +43,10 @@ function fakeAudio() {
 }
 
 // respond(url) -> a JSONP payload, or null to refuse the script (CSP / offline)
-function createHarness(fixture, respond) {
+// store   -> stands in for window.localStorage. Omitted, there is none at all,
+//            which is the sandboxed-Artifact case and the default everywhere
+//            else in this file.
+function createHarness(fixture, respond, store) {
   let slots = [], cursor = 0, pendingEffects = [], dirty = false, tree = null;
   let audioEl = null;
   const urls = [];
@@ -121,6 +124,7 @@ function createHarness(fixture, respond) {
     React, ReactDOM: { createRoot: () => ({ render: () => {} }) },
   };
   sandbox.window = sandbox;
+  if (store) sandbox.localStorage = store;
 
   const ctx = vm.createContext(sandbox);
 
@@ -207,6 +211,12 @@ function walk(node, out) {
 }
 function textOf(node) {
   return walk(node, []).flatMap(n => (n.kids || []).filter(k => typeof k === 'string')).join('');
+}
+// textOf drops numeric children, and the scoreline renders its counts as raw
+// numbers rather than strings, so asserting on them needs this instead.
+function valuesOf(node) {
+  return walk(node, []).flatMap(n => (n.kids || [])
+    .filter(k => typeof k === 'string' || typeof k === 'number')).join(' ');
 }
 // The transport swaps a <path> (play) for a <rect> (stop), so the icon itself
 // is what gets asserted - not just the label beside it.
@@ -449,9 +459,139 @@ async function onlineScenario() {
      before + ' -> ' + ui.urls.length + ' | ' + ui.urls[ui.urls.length - 1]);
 }
 
+// A localStorage good enough to persist across a reload, plus one that throws on
+// every access the way a sandboxed iframe does.
+function fakeStore(seed) {
+  const map = new Map(seed ? Object.entries(seed) : []);
+  return {
+    getItem: k => (map.has(k) ? map.get(k) : null),
+    setItem: (k, v) => map.set(k, String(v)),
+    removeItem: k => map.delete(k),
+    _map: map,
+  };
+}
+const hostileStore = {
+  get getItem() { throw new Error('SecurityError'); },
+  get setItem() { throw new Error('SecurityError'); },
+  get removeItem() { throw new Error('SecurityError'); },
+};
+
+// Plays one round to its end. Guessing the answer wins it, guessing the other
+// song and then giving up loses it.
+async function playRound(ui, win) {
+  ui.click(ui.byText('Endless / Random'), 'start');
+  await wait(10);
+  ui.flush();
+  const answer = ui.CATALOG[0];                    // Math.random pinned to 0
+  ui.type(win ? answer.title : ui.CATALOG[2].title);
+  const opt = ui.options()[0];
+  if (opt) { opt.props.onMouseDown ? opt.props.onMouseDown({ preventDefault() {} }) : opt.props.onClick(); ui.flush(); }
+  const submit = ui.byText('Submit');
+  if (submit && !submit.props.disabled) ui.click(submit, 'submit');
+  if (!win) {
+    for (let i = 0; i < 8 && !ui.byText('Next song'); i++) {
+      const giveUp = ui.byText('Give up') || ui.byText('Skip');
+      if (!giveUp) break;
+      ui.click(giveUp, 'skip/give up');
+      await wait(5);
+    }
+  }
+  await wait(10);
+  ui.flush();
+}
+
+async function scoreScenario() {
+  console.log('\n--- the score survives a refresh ---');
+  const store = fakeStore();
+
+  const first = createHarness(COLLIDING, () => null, store);
+  first.render();
+  await wait(30);
+  first.flush();
+  ok('nothing shown before a round has been played', !first.byClass('scoreline'));
+
+  await playRound(first, true);
+  ok('a finished round is scored', !!first.byClass('scoreline'));
+  ok('and written to the store', store._map.has('filmi.score.v1'), [...store._map.keys()].join());
+
+  const saved = JSON.parse(store.getItem('filmi.score.v1'));
+  ok('the win was recorded', saved.won === 1 && saved.total === 1,
+     saved.won + '/' + saved.total);
+  ok('and it started a streak', saved.streak === 1 && saved.best === 1,
+     'streak ' + saved.streak + ' best ' + saved.best);
+
+  // A brand new harness against the same store IS a refresh: fresh hook slots,
+  // fresh component, nothing carried over but what localStorage holds.
+  const second = createHarness(COLLIDING, () => null, store);
+  second.render();
+  await wait(30);
+  second.flush();
+  ok('a reload shows the saved score straight away, before any round',
+     !!second.byClass('scoreline'), textOf(second.byClass('scoreline')));
+  ok('the start screen offers to reset it', !!second.byText('Reset'));
+
+  second.click(second.byText('Reset'), 'reset');
+  ok('reset clears the store', !store._map.has('filmi.score.v1'));
+  ok('and the scoreline goes away', !second.byClass('scoreline'));
+
+  console.log('\n--- a localStorage that throws must not take the page down ---');
+  const hostile = createHarness(COLLIDING, () => null, hostileStore);
+  hostile.render();
+  await wait(30);
+  hostile.flush();
+  ok('the app still boots', !!hostile.byText('Endless / Random'));
+  await playRound(hostile, true);
+  ok('a round still completes and scores in memory', !!hostile.byClass('scoreline'),
+     textOf(hostile.byClass('scoreline')));
+
+  console.log('\n--- a corrupt or hostile stored value is not trusted ---');
+  const junk = createHarness(COLLIDING, () => null,
+    fakeStore({ 'filmi.score.v1': '{"won":9999,"total":1,"streak":-5,"best":"x"}' }));
+  junk.render();
+  await wait(30);
+  junk.flush();
+  const line = valuesOf(junk.byClass('scoreline'));
+  const wonNode = walk(junk.byClass('scoreline'), []).find(n => n.type === 'b');
+  ok('wins cannot exceed rounds played', wonNode.kids[0] === 1 && !line.includes('9999'), line);
+  ok('a negative streak reads as zero', line.includes('streak 0'), line);
+  ok('a non-numeric best reads as zero', line.includes('best 0'), line);
+
+  const broken = createHarness(COLLIDING, () => null, fakeStore({ 'filmi.score.v1': 'not json{' }));
+  broken.render();
+  ok('unparseable JSON is ignored rather than thrown', !broken.byClass('scoreline'));
+
+  console.log('\n--- going home ---');
+  const ui = createHarness(COLLIDING, () => null, fakeStore());
+  ui.render();
+  await wait(30);
+  ui.flush();
+  ok('no way back from the start screen itself', !ui.byText('← Home'));
+  ok('and the wordmark is inert there', !ui.byLabel('Filmi — back to the start screen'));
+
+  ui.click(ui.byText('Endless / Random'), 'start');
+  await wait(10);
+  ui.flush();
+  ok('a round is under way', !!ui.byClass('transport'));
+  ok('now there is a way back', !!ui.byText('← Home'));
+
+  ui.click(ui.byLabel('Filmi — back to the start screen'), 'wordmark');
+  ui.flush();
+  ok('the wordmark goes home too', !!ui.byText('Endless / Random'));
+  ok('the round was abandoned, not lost', !ui.byClass('scoreline'));
+
+  ui.click(ui.byText('Endless / Random'), 'restart');
+  await wait(10);
+  ui.flush();
+  ui.click(ui.byText('← Home'), 'back button');
+  ui.flush();
+  ok('the back button goes home as well', !!ui.byText('Endless / Random'));
+  ok('still nothing scored', !ui.byClass('scoreline'));
+}
+
 (async function main() {
   await blockedScenario();
   await onlineScenario();
+  await scoreScenario();
   console.log('\n================  ' + pass + ' passed, ' + fail + ' failed  ================\n');
   process.exit(fail ? 1 : 0);
 })().catch(e => {
