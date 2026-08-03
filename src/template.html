@@ -2137,7 +2137,20 @@ button:disabled { cursor: not-allowed; }
 
 @media (max-width: 420px) {
   .card { flex-direction: column; align-items: flex-start; text-align: left; }
-  .cover { width: 100%; height: 150px; }
+
+  /* Album art is SQUARE. A full-width box 150px tall is 2.2:1, and object-fit:
+     cover crops to fill - so the top and bottom two thirds of every cover were
+     being thrown away and what showed was a letterbox slice of the middle.
+     Match the source's aspect ratio and the whole image survives.
+     The vh cap is what keeps the reveal from growing so tall that "Next song"
+     drops below the fold again on a short phone. */
+  .cover {
+    width: min(100%, 40vh);
+    height: auto;
+    aspect-ratio: 1;
+    align-self: center;
+    font-size: 64px;          /* the no-artwork placeholder letter, scaled up */
+  }
   .transport { gap: var(--step-2); }
   .transport-meta { min-width: 72px; }
 
