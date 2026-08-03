@@ -2738,14 +2738,58 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
     });
   }
 
+  // iOS reports media currentTime in COARSE steps - about a quarter of a
+  // second - rather than continuously. A 0.5s snippet therefore only ever reads
+  // 0, then 0.25, then 0.5, so a playhead painted straight from it jumps twice
+  // and reads as a stall at each step. That is the stutter.
+  //
+  // currentTime stays the authority; wall clock only fills the gaps between its
+  // updates, and every real update re-anchors it so drift cannot accumulate.
+  // Interpolating while PAUSED would run the bar on through a buffering stall,
+  // so that case returns the real value and lets the bar sit still, which at
+  // least tells the truth.
+  function makePosition(el, clock) {
+    var now = clock || Date.now;
+    var lastT = -1, lastAt = 0;
+    return {
+      reset: function () { lastT = -1; },
+      read: function () {
+        var t = el.currentTime, n = now();
+        if (t !== lastT) { lastT = t; lastAt = n; return t; }
+        if (el.paused) return t;
+        return t + (n - lastAt) / 1000;
+      }
+    };
+  }
+
   function makeAudioPlayer(el) {
     var raf = 0, stopAt = 0, onTick = null, onEnd = null;
+    var position = makePosition(el);
 
     function loop() {
-      if (el.currentTime >= stopAt) { stop(); if (onEnd) onEnd(); return; }
-      if (onTick) onTick(el.currentTime);
+      var pos = position.read();
+      if (pos >= stopAt) { stop(); if (onEnd) onEnd(); return; }
+      if (onTick) onTick(pos);
       raf = requestAnimationFrame(loop);
     }
+
+    // Only once audio is genuinely running. play() resolving does not mean it
+    // has started - iOS buffers after the call, currentTime sits at 0 the whole
+    // time, and a loop started there would interpolate forward against sound
+    // that has not begun. The timeout is the usual escape hatch.
+    function startLoop() {
+      if (raf) return;
+      position.reset();
+      function go() {
+        el.removeEventListener("playing", go);
+        if (timer) clearTimeout(timer);
+        if (!raf) raf = requestAnimationFrame(loop);
+      }
+      if (!el.paused && el.currentTime > 0) return go();
+      el.addEventListener("playing", go);
+      var timer = setTimeout(go, 1200);
+    }
+
     function stop() {
       cancelAnimationFrame(raf);
       raf = 0;
@@ -2771,7 +2815,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
           return rewind(el);
         }).then(function () {
           var p = el.play();
-          raf = requestAnimationFrame(loop);
+          startLoop();
           return p;
         });
       },

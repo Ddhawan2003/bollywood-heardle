@@ -21,7 +21,7 @@ let appSrc = html.slice(appStart, appEnd);
 appSrc = appSrc.replace(
   'ReactDOM.createRoot(document.getElementById("root")).render(h(App));',
   'window.__T = { norm, scoreResult, pickBest, chunk, waveShape, label, fmt, seedFrom, songSeed,' +
-  ' buildCatalog, ambiguousTitles, resolveCatalog, resolveOne, CATALOG, rewind,' +
+  ' buildCatalog, ambiguousTitles, resolveCatalog, resolveOne, CATALOG, rewind, makePosition,' +
   ' STEPS, MAX_ATTEMPTS, WAVE_BARS };'
 );
 
@@ -230,6 +230,46 @@ ok('final attempt unlocks the full 16s', T.STEPS[5] === 16 && unlockAt(5) === 1)
 // instant, which is why this only ever broke on a phone: streaming Apple's CDN,
 // the playback loop read the previous snippet's position, so a clip started
 // halfway and stopped early. Replaying the same snippet halted on frame one.
+// iOS advances media currentTime in ~0.25s steps, so a 0.5s snippet reads only
+// 0, 0.25, 0.5. Painted straight, the playhead jumps twice and looks stalled.
+console.log('\n--- the playhead is smooth over a coarse currentTime ---');
+{
+  let clock = 0;
+  const el = { currentTime: 0, paused: false };
+  const pos = T.makePosition(el, () => clock);
+
+  ok('reads the real value the moment it changes', pos.read() === 0);
+
+  // 100ms later the element still says 0 - iOS has not ticked yet.
+  clock = 100;
+  const a = pos.read();
+  ok('keeps moving between updates', a > 0.09 && a < 0.11, a);
+
+  clock = 240;
+  const b = pos.read();
+  ok('still moving, and monotonic', b > a && b > 0.23 && b < 0.25, b);
+
+  // Now the element jumps a whole quarter-second at once.
+  clock = 250; el.currentTime = 0.25;
+  const c = pos.read();
+  ok('re-anchors to the element rather than drifting past it', c === 0.25);
+
+  clock = 350;
+  const d = pos.read();
+  ok('interpolates on from the new anchor', d > 0.34 && d < 0.36, d);
+
+  // Never invent progress the audio is not making.
+  el.paused = true;
+  clock = 900;
+  ok('a paused element does not interpolate', pos.read() === 0.25, pos.read());
+
+  el.paused = false;
+  pos.reset();
+  el.currentTime = 0;
+  clock = 1000;
+  ok('reset re-anchors for the next play', pos.read() === 0);
+}
+
 console.log('\n--- rewinding waits for the seek to land ---');
 function fakeMedia(opts) {
   opts = opts || {};
