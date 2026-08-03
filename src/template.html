@@ -1558,11 +1558,20 @@ body {
   width: 100%;
   max-width: 600px;
   margin: 0 auto;
-  padding: var(--step-4) var(--step-3) var(--step-4);
+  /* env() covers the notch and home indicator, which viewport-fit=cover in the
+     document head lets the page draw under. */
+  padding: var(--step-4)
+           max(var(--step-3), env(safe-area-inset-right))
+           max(var(--step-4), env(safe-area-inset-bottom))
+           max(var(--step-3), env(safe-area-inset-left));
   display: flex;
   flex-direction: column;
   gap: var(--step-3);
+  /* 100vh on mobile Safari is the height with the toolbars RETRACTED, so the
+     last thing on the page sits behind them until you scroll. dvh is the live
+     value; vh stays first as the fallback for browsers without it. */
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 /* ---------- masthead ---------- */
@@ -2131,7 +2140,21 @@ button:disabled { cursor: not-allowed; }
   .cover { width: 100%; height: 150px; }
   .transport { gap: var(--step-2); }
   .transport-meta { min-width: 72px; }
+
+  /* The masthead is a two-column flex row, and both columns are wide tracked
+     monospace. On a 390px screen "Guess the Bollywood song" and "this session"
+     together overrun the line and the score runs off the right edge. Tracking
+     is the cheapest thing to give back - it costs nothing but swagger, and a
+     flex item will not shrink below its content without min-width: 0. */
+  .masthead { gap: var(--step-2); }
+  .masthead > div { min-width: 0; }
+  .tagline { font-size: 9px; letter-spacing: 0.1em; }
+  .scoreline { font-size: 10px; letter-spacing: 0.04em; }
 }
+
+/* Nothing in this layout is meant to scroll sideways; if something ever
+   overruns, clip it rather than letting the whole page slide. */
+html, body { overflow-x: hidden; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -2378,6 +2401,34 @@ button:disabled { cursor: not-allowed; }
     });
   }
 
+  // Rewinding is ASYNCHRONOUS, and forgetting that is a real bug rather than a
+  // theoretical one. Assigning currentTime only *requests* a seek; the property
+  // keeps reporting the old position until the browser has actually moved. From
+  // a local file that is instant, which is why it never showed up on a desktop
+  // - but streaming Apple's CDN over mobile it is not. The playback loop then
+  // reads the PREVIOUS snippet's position: play 0.5s, skip to 1s, press play,
+  // and currentTime still says 0.5, so the clip starts halfway and stops early.
+  // Worse, replaying the same snippet reads 0.5 against a stopAt of 0.5 and
+  // halts on the first frame.
+  //
+  // So wait for the seek to land. The timeout is there because a browser that
+  // never fires "seeked" must not leave the transport stuck forever; playing
+  // from slightly the wrong place beats not playing at all.
+  function rewind(el) {
+    if (!(el.currentTime > 0.05)) return Promise.resolve();
+    return new Promise(function (resolve) {
+      var timer = 0;
+      function done() {
+        el.removeEventListener("seeked", done);
+        if (timer) clearTimeout(timer);
+        resolve();
+      }
+      el.addEventListener("seeked", done);
+      timer = setTimeout(done, 500);
+      try { el.currentTime = 0; } catch (e) { done(); }
+    });
+  }
+
   function makeAudioPlayer(el) {
     var raf = 0, stopAt = 0, onTick = null, onEnd = null;
 
@@ -2408,7 +2459,8 @@ button:disabled { cursor: not-allowed; }
         onEnd = cbs && cbs.onEnd;
         return whenPlayable(el).then(function () {
           stopAt = limit == null ? (isFinite(el.duration) ? el.duration : 30) : limit;
-          try { el.currentTime = 0; } catch (e) {}
+          return rewind(el);
+        }).then(function () {
           var p = el.play();
           raf = requestAnimationFrame(loop);
           return p;

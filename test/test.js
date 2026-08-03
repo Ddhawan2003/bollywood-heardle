@@ -21,7 +21,7 @@ let appSrc = html.slice(appStart, appEnd);
 appSrc = appSrc.replace(
   'ReactDOM.createRoot(document.getElementById("root")).render(h(App));',
   'window.__T = { norm, scoreResult, pickBest, chunk, waveShape, label, fmt, seedFrom, songSeed,' +
-  ' buildCatalog, ambiguousTitles, resolveCatalog, resolveOne, CATALOG,' +
+  ' buildCatalog, ambiguousTitles, resolveCatalog, resolveOne, CATALOG, rewind,' +
   ' STEPS, MAX_ATTEMPTS, WAVE_BARS };'
 );
 
@@ -225,8 +225,63 @@ const unlockAt = n => (Math.min(n, 5) + 1) / 6;
 ok('unlock fraction grows monotonically', [0,1,2,3,4,5].every((n,i,a) => i===0 || unlockAt(n) > unlockAt(a[i-1])));
 ok('final attempt unlocks the full 16s', T.STEPS[5] === 16 && unlockAt(5) === 1);
 
+// Assigning currentTime only REQUESTS a seek - the property keeps reporting
+// the old position until the browser has moved. Off a local file that is
+// instant, which is why this only ever broke on a phone: streaming Apple's CDN,
+// the playback loop read the previous snippet's position, so a clip started
+// halfway and stopped early. Replaying the same snippet halted on frame one.
+console.log('\n--- rewinding waits for the seek to land ---');
+function fakeMedia(opts) {
+  opts = opts || {};
+  const ls = {};
+  const el = {
+    _t: opts.at || 0, seeks: 0,
+    addEventListener(k, f) { (ls[k] = ls[k] || []).push(f); },
+    removeEventListener(k, f) { ls[k] = (ls[k] || []).filter(g => g !== f); },
+    listeners(k) { return (ls[k] || []).length; },
+  };
+  Object.defineProperty(el, 'currentTime', {
+    get() { return el._t; },
+    set(v) {
+      el.seeks++;
+      if (opts.neverSeeks) return;                  // a browser that never answers
+      setTimeout(() => { el._t = v; (ls.seeked || []).slice().forEach(f => f()); },
+                 opts.delay == null ? 5 : opts.delay);
+    },
+  });
+  return el;
+}
+
+const rewindTests = (async () => {
+  const parked = fakeMedia({ at: 0.5 });
+  let settled = false;
+  const p = T.rewind(parked).then(() => { settled = true; });
+  ok('does not resolve while the seek is still in flight',
+     settled === false && parked.currentTime === 0.5, 'currentTime=' + parked.currentTime);
+  await p;
+  ok('resolves once the seek lands, at zero', settled === true && parked.currentTime === 0);
+  ok('the seek was actually requested', parked.seeks === 1, parked.seeks);
+  ok('its listener is cleaned up', parked.listeners('seeked') === 0);
+
+  // Already at the start, so there is nothing to wait for and seeking a
+  // streamed file needlessly is exactly what stalls it.
+  const atStart = fakeMedia({ at: 0 });
+  await T.rewind(atStart);
+  ok('no seek issued when already at the start', atStart.seeks === 0);
+
+  // A browser that never fires "seeked" must not strand the transport.
+  const broken = fakeMedia({ at: 0.5, neverSeeks: true });
+  const t0 = Date.now();
+  await T.rewind(broken);
+  ok('a seek that never answers still resolves, via the timeout',
+     Date.now() - t0 >= 400, Date.now() - t0 + 'ms');
+  ok('and cleans its listener up too', broken.listeners('seeked') === 0);
+})();
+
+rewindTests.then(() => {
+
 console.log('\n--- live iTunes resolution via JSONP ---');
-T.resolveCatalog(CATALOG, () => {}).then(res => {
+return T.resolveCatalog(CATALOG, () => {}).then(res => {
   const keys = Object.keys(res.tracks);
   const batches = Math.ceil(CATALOG.length / 200);
   ok('not flagged offline', res.offline === false);
@@ -265,8 +320,10 @@ T.resolveCatalog(CATALOG, () => {}).then(res => {
   });
 
   return liveSingles();
+});
+
 }).catch(e => {
-  console.log('  FAIL  resolveCatalog threw: ' + e.message);
+  console.log('  FAIL  threw: ' + e.message);
   process.exit(1);
 });
 
