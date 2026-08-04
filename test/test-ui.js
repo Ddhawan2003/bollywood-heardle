@@ -281,6 +281,15 @@ async function blockedScenario() {
   const answer = ui.CATALOG[0];                    // Math.random pinned to 0
   ok('round is under way', !!ui.byClass('transport'));
 
+  // Focusing the box must not hand out a free list of songs to pick from.
+  ui.find(n => n.type === 'input').props.onFocus();
+  ui.flush();
+  ok('focusing the input offers nothing', ui.options().length === 0 && !ui.byClass('listbox'));
+  ui.type('tere');
+  ok('typing opens the list', ui.options().length > 0, ui.options().length);
+  ui.type('');
+  ok('clearing it closes the list again', !ui.byClass('listbox'));
+
   // The playable controls come first and the guess history last. Reversed, the
   // six rows push the waveform and play button off a phone screen.
   const order = [];
@@ -709,14 +718,14 @@ async function roomScenario() {
 
   const wantA = expectedRoom(a, 'k7f2qm');
   ok('the room opened straight from the URL', !!a.byClass('transport'));
-  ok('the masthead names the room', textOf(a.byClass('scoreline')).includes('k7f2qm'),
-     textOf(a.byClass('scoreline')));
-  ok('and counts the round', textOf(a.byClass('scoreline')).includes('round 1 of 6'),
-     textOf(a.byClass('scoreline')));
+  ok('the masthead names the room', textOf(a.byClass('roombar')).includes('k7f2qm'),
+     textOf(a.byClass('roombar')));
+  ok('and counts the round', textOf(a.byClass('roombar')).includes('round 1 of 6'),
+     textOf(a.byClass('roombar')));
   ok('the running total starts at nothing',
-     valuesOf(a.byClass('scoreline')).includes('0') &&
-     valuesOf(a.byClass('scoreline')).includes('36'),
-     valuesOf(a.byClass('scoreline')));
+     valuesOf(a.byClass('roombar')).includes('0') &&
+     valuesOf(a.byClass('roombar')).includes('36'),
+     valuesOf(a.byClass('roombar')));
   ok('the whole room resolved in one batched request',
      a.urls.filter(u => u.includes('/lookup')).length === 1,
      a.urls.length + ' requests');
@@ -724,6 +733,16 @@ async function roomScenario() {
      a.audio().src === 'https://audio.example/' + wantA[0].trackId + '.m4a', a.audio().src);
   ok('the song with no preview was skipped over, not dealt',
      !wantA.some(s => s.trackId === 900));
+
+  // Getting people INTO the room is the whole point, so the share has to be
+  // reachable while playing rather than only after six rounds.
+  ok('a room can be shared mid-round', !!a.byText('Share room'));
+  a.click(a.byText('Share room'), 'share mid-round');
+  await wait(10);
+  a.flush();
+  ok('sharing mid-round yields the room link',
+     a.clip[a.clip.length - 1] === 'https://filmi.test/#room=k7f2qm',
+     a.clip[a.clip.length - 1]);
 
   console.log('\n--- the total moves as rounds finish ---');
   const live = createHarness(ROOM_POOL, roomReply, fakeStore(), 'room=k7f2qm');
@@ -733,16 +752,16 @@ async function roomScenario() {
   const liveSongs = expectedRoom(live, 'k7f2qm');
   await playRoom(live, liveSongs.slice(0, 1), [0]);      // win round 1 outright
   ok('a first-guess win banks the full six',
-     valuesOf(live.byClass('scoreline')).includes('6'), valuesOf(live.byClass('scoreline')));
+     valuesOf(live.byClass('roombar')).includes('6'), valuesOf(live.byClass('roombar')));
   ok('and the round counter moved with it',
-     textOf(live.byClass('scoreline')).includes('round 2 of 6'),
-     textOf(live.byClass('scoreline')));
+     textOf(live.byClass('roombar')).includes('round 2 of 6'),
+     textOf(live.byClass('roombar')));
   await playRoom(live, liveSongs.slice(1, 2), []);       // give up round 2
   ok('a missed round adds nothing',
-     valuesOf(live.byClass('scoreline')).includes('6'), valuesOf(live.byClass('scoreline')));
+     valuesOf(live.byClass('roombar')).includes('6'), valuesOf(live.byClass('roombar')));
   ok('but still advances the room',
-     textOf(live.byClass('scoreline')).includes('round 3 of 6'),
-     textOf(live.byClass('scoreline')));
+     textOf(live.byClass('roombar')).includes('round 3 of 6'),
+     textOf(live.byClass('roombar')));
 
   console.log('\n--- playing a room through to its summary ---');
   await playRoom(a, wantA, [0, 2, 4]);
@@ -770,7 +789,7 @@ async function roomScenario() {
      summaryTitles(a).join() === wantA.map(s => s.title).join(),
      summaryTitles(a).join() + ' vs ' + wantA.map(s => s.title).join());
   ok('the endless record was left alone', !a.byClass('scoreline') ||
-     !valuesOf(a.byClass('scoreline')).includes('streak'), valuesOf(a.byClass('scoreline')));
+     !valuesOf(a.byClass('roombar')).includes('streak'), valuesOf(a.byClass('roombar')));
 
   // A second, independent player on the same code must end with the same six.
   const b = createHarness(ROOM_POOL, roomReply, fakeStore(), 'room=k7f2qm');
@@ -826,7 +845,7 @@ async function roomScenario() {
      textOf(a.byClass('summary-note')).includes(a.T.CATALOG_TAG) ||
      textOf(a.byClass('summary-tag')).includes(a.T.CATALOG_TAG), a.T.CATALOG_TAG);
 
-  a.click(a.byText('Copy link'), 'copy link');
+  a.click(a.byText('Share this room'), 'copy link');
   await wait(10);
   a.flush();
   ok('the link is a full URL with the room in the hash',

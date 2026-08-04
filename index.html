@@ -1328,6 +1328,54 @@ body {
 }
 
 /* ---- rooms ---- */
+.roombar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--step-2);
+  padding: 9px 10px 9px 13px;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  /* The marigold edge is the same device the set list uses for a round you
+     named: in this palette a left rule means "this is yours". */
+  border-left: 2px solid var(--marigold);
+  border-radius: var(--radius);
+}
+.roombar-id { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.roombar-id b {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--paper);
+  font-weight: 500;
+}
+.roombar-id span {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+}
+.roombar-share {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--marigold);
+  border: 0;
+  border-radius: 999px;
+  /* Generous for a small control: this is a tap target on a phone, and 44px is
+     the point below which thumbs start missing. */
+  padding: 11px 18px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.roombar-share:hover { background: #FFBE55; }
+.roombar-share:active { transform: translateY(1px); }
+.roombar-share:focus-visible { outline: 2px solid var(--paper); outline-offset: 2px; }
 .roombox {
   margin-top: var(--step-2);
   padding-top: var(--step-2);
@@ -1804,7 +1852,7 @@ button:disabled { cursor: not-allowed; }
 
 .listbox {
   position: absolute;
-  bottom: calc(100% + 6px);
+  top: calc(100% + 6px);
   left: 0;
   right: 0;
   max-height: 244px;
@@ -2938,7 +2986,10 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
     // and not a normalize("NFD") over the whole catalog.
     var matches = useMemo(function () {
       var q = norm(text);
-      if (!q) return songs.slice(0, 60);
+      // Nothing typed, nothing offered. Sixty arbitrary songs on focus is not a
+      // suggestion, it is the top of the catalog in whatever order it happens to
+      // be in - and in a guessing game it reads as a hint that isn't one.
+      if (!q) return [];
       var starts = [], contains = [];
       songs.forEach(function (s) {
         if (s.nTitle.indexOf(q) === 0) starts.push(s);
@@ -3001,7 +3052,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 
     return h("div", { className: "guessbar" },
       h("div", { className: "combo", ref: wrapRef },
-        open && !disabled ? h("ul", {
+        open && !disabled && norm(text) ? h("ul", {
           className: "listbox",
           role: "listbox",
           "aria-label": "Song suggestions"
@@ -3029,7 +3080,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
           autoComplete: "off",
           spellCheck: false,
           role: "combobox",
-          "aria-expanded": open,
+          "aria-expanded": open && matches.length > 0,
           "aria-autocomplete": "list",
           onChange: function (e) { setText(e.target.value); setOpen(true); },
           onFocus: function () { setOpen(true); },
@@ -3323,6 +3374,33 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
     try { window.scrollTo(0, 0); } catch (e) { /* nothing to scroll */ }
   }
 
+  // On a phone the native share sheet IS the answer to "send this to the group":
+  // it puts WhatsApp one tap away instead of copy, leave the app, find the chat,
+  // paste. Desktop mostly lacks it, so the clipboard is the fallback rather than
+  // the plan.
+  //
+  // Returns "shared" | "copied" | "cancelled" | "failed". Cancelled matters:
+  // navigator.share REJECTS when the user dismisses the sheet, and reporting
+  // that as a failure would tell them something went wrong when they simply
+  // changed their mind.
+  function shareRoom(code) {
+    var url = roomLink(code);
+    var toClipboard = function () {
+      return copyText(url).then(function (ok) { return ok ? "copied" : "failed"; });
+    };
+    try {
+      if (window.navigator && window.navigator.share) {
+        return window.navigator.share({ title: "Filmi", url: url }).then(
+          function () { return "shared"; },
+          function (err) {
+            return (err && err.name === "AbortError") ? "cancelled" : toClipboard();
+          }
+        );
+      }
+    } catch (e) { /* fall through */ }
+    return toClipboard();
+  }
+
   function copyText(s) {
     try {
       if (window.navigator && window.navigator.clipboard && window.navigator.clipboard.writeText) {
@@ -3536,6 +3614,11 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
       setPos(0);
       setAudioErr("");
       setBusy(false);
+      // "Link copied" is feedback for a tap that just happened, not a fact about
+      // the room. Left standing it followed the player into the next round and
+      // on to the summary, where the share button sat there claiming it had
+      // already been pressed.
+      setCopied("");
       setPhase("play");
       scrollToTop();
 
@@ -3791,23 +3874,10 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
             className: "demochip",
             title: "Apple's previews are unreachable here, so the audio is synthesised"
           }, "Demo audio") : null,
-          // In a room the lifetime score is the wrong number to show - the round
-          // counter is what the player is actually inside of.
-          // Silent on the summary, where the screen's own heading already names
-          // the room in type twice this size. Saying it in both places just
-          // makes the reader check whether they are two different things.
-          // Three short lines rather than one long one: the masthead's other
-          // column is wide tracked monospace too, and a single "nazar-sitara ·
-          // round 3 of 6 · 11 pts" is what pushes the pair off a narrow phone.
-          //
-          // The total counts finished rounds only, so it is what you have
-          // banked, not what you might still get. It moves when a round ends.
-          room && phase !== "summary"
-            ? h("div", { className: "scoreline" },
-                room.code, h("br"),
-                h("b", null, roomPoints(room.results)), " / " + ROOM_MAX_POINTS, h("br"),
-                "round " + Math.min(room.results.length + 1, ROOM_ROUNDS) + " of " + ROOM_ROUNDS)
-            : null,
+          // A room's own state lives in RoomBar now, not here. It had to exist
+          // anyway to give Share a home, and it can carry the code, the points
+          // and the round without crowding the masthead's two columns of wide
+          // tracked monospace - which is what pushes them off a narrow phone.
           // No longer "this session" - it outlives the tab now.
           !room && score.total > 0
             ? h("div", { className: "scoreline" },
@@ -3815,6 +3885,36 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
                 "streak " + score.streak + " · best " + score.best)
             : null
         )
+      );
+    }
+
+    // Sits under the masthead on every room screen except the summary, which
+    // has its own heading and its own share button. It exists because Share
+    // needed somewhere to live that a player would find MID-round: the whole
+    // point of a room is getting other people into it, and asking them to
+    // finish six songs before they can send the link gets that backwards.
+    function RoomBar() {
+      if (!room || phase === "summary") return null;
+      var label = copied === "copied" ? "Link copied"
+                : copied === "failed" ? "Copy failed"
+                : "Share room";
+      return h("div", { className: "roombar" },
+        h("div", { className: "roombar-id" },
+          h("b", null, room.code),
+          h("span", null,
+            roomPoints(room.results) + " / " + ROOM_MAX_POINTS + " · round " +
+            Math.min(room.results.length + 1, ROOM_ROUNDS) + " of " + ROOM_ROUNDS)
+        ),
+        h("button", {
+          className: "roombar-share",
+          onClick: function () {
+            shareRoom(room.code).then(function (r) {
+              // "shared" and "cancelled" both leave the button alone: the sheet
+              // already told the player what happened.
+              if (r === "copied" || r === "failed") setCopied(r);
+            });
+          }
+        }, label)
       );
     }
 
@@ -3927,11 +4027,11 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
           h("button", {
             className: "btn btn-primary summary-share",
             onClick: function () {
-              copyText(roomLink(room.code)).then(function (ok) {
-                setCopied(ok ? "link" : "failed");
+              shareRoom(room.code).then(function (r) {
+                if (r === "copied" || r === "failed") setCopied(r);
               });
             }
-          }, copied === "link" ? "Link copied" : "Copy link"),
+          }, copied === "copied" ? "Link copied" : "Share this room"),
 
           copied === "failed"
             ? h("div", { className: "notice bad" },
@@ -3961,6 +4061,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
     if (over) {
       return frame(h("div", { className: "shell" },
         Masthead(),
+        RoomBar(),
         h("div", { className: "reveal" },
           h("div", { className: "verdict " + (phase === "won" ? "win" : "lose") },
             phase === "won"
@@ -4045,6 +4146,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
     /* ---- active round ---- */
     return frame(h("div", { className: "shell" },
       Masthead(),
+      RoomBar(),
 
       h("div", { className: "stage" },
         h(Waveform, { shape: shape, unlocked: unlocked, head: headFrac }),
