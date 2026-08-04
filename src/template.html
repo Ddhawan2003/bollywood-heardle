@@ -3160,6 +3160,11 @@ html, body { overflow-x: hidden; }
     catch (e) { return ""; }
   }
 
+  // One label for sharing the game, in one place, because it appears on three
+  // screens and three copies drift. Sharing a ROOM is a different action and
+  // keeps its own wording.
+  var SHARE_GAME_LABEL = "Like the game? Share Filmi";
+
   function shareGame() {
     return shareThis(
       "Filmi — name the Hindi film song from half a second of audio. Every miss buys you a little more.",
@@ -3756,7 +3761,7 @@ html, body { overflow-x: hidden; }
               }
             }, copied === "copied" ? "Link copied"
                : copied === "failed" ? "Copy failed — the link is in the address bar"
-               : "Share Filmi"),
+               : SHARE_GAME_LABEL),
             h("p", { className: "roombox-note" },
               "Sends the game, not a room — they start wherever they like.")
           ),
@@ -3936,7 +3941,7 @@ html, body { overflow-x: hidden; }
             }
           }, copied === "copied" ? "Link copied"
              : copied === "failed" ? "Copy failed — the link is in the address bar"
-             : room ? "Share this room" : "Share Filmi"),
+             : room ? "Share this room" : SHARE_GAME_LABEL),
 
           h("div", { className: "rows" }, guesses.map(function (g, i) {
             return h("div", {
@@ -4030,7 +4035,7 @@ html, body { overflow-x: hidden; }
         }
       }, copied === "copied" ? "Link copied"
          : copied === "failed" ? "Copy failed — the link is in the address bar"
-         : "Enjoying this? Share Filmi") : null,
+         : SHARE_GAME_LABEL) : null,
 
       Foot()
     ));
