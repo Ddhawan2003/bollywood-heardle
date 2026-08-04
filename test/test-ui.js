@@ -740,9 +740,11 @@ async function roomScenario() {
   a.click(a.byText('Share room'), 'share mid-round');
   await wait(10);
   a.flush();
+  const midShare = a.clip[a.clip.length - 1];
   ok('sharing mid-round yields the room link',
-     a.clip[a.clip.length - 1] === 'https://filmi.test/#room=k7f2qm',
-     a.clip[a.clip.length - 1]);
+     midShare.includes('https://filmi.test/#room=k7f2qm'), midShare);
+  ok('and invites rather than boasting, because there is no score yet',
+     !/\d+\/36/.test(midShare) && /see how you do/i.test(midShare), midShare);
 
   console.log('\n--- the total moves as rounds finish ---');
   const live = createHarness(ROOM_POOL, roomReply, fakeStore(), 'room=k7f2qm');
@@ -848,9 +850,12 @@ async function roomScenario() {
   a.click(a.byText('Share this room'), 'copy link');
   await wait(10);
   a.flush();
+  const endShare = a.clip[a.clip.length - 1];
   ok('the link is a full URL with the room in the hash',
-     a.clip[a.clip.length - 1] === 'https://filmi.test/#room=k7f2qm',
-     a.clip[a.clip.length - 1]);
+     endShare.includes('https://filmi.test/#room=k7f2qm'), endShare);
+  ok('a finished room shares the score as a challenge',
+     endShare.includes('18/36') && /try beating it/i.test(endShare), endShare);
+  ok('and says how many were named', endShare.includes('3 of 6 songs named'), endShare);
   ok('and the button confirms it copied', !!a.byText('Link copied'));
 
   console.log('\n--- a room is played once ---');

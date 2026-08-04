@@ -1926,6 +1926,10 @@ button:disabled { cursor: not-allowed; }
   flex-direction: column;
   gap: var(--step-3);
   animation: revealIn 400ms cubic-bezier(0.2,0.7,0.3,1) both;
+  /* Leaves a strip of the room bar peeking above the reveal when it is scrolled
+     into view, so Share reads as "just up there" rather than as something that
+     has gone away. Nothing is hidden - it is a hint that there is more above. */
+  scroll-margin-top: 18px;
 }
 @keyframes revealIn {
   from { opacity: 0; transform: translateY(10px); }
@@ -3374,6 +3378,20 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
     try { window.scrollTo(0, 0); } catch (e) { /* nothing to scroll */ }
   }
 
+  // Not every screen wants the top of the page. The reveal is the tall one, and
+  // its own main action - Next song - sits below the artwork, so opening it at
+  // scroll 0 spends the whole viewport on the masthead and pushes the button the
+  // player is reaching for under the fold. Anchoring on the reveal itself puts
+  // the song and the button on screen together, and leaves the room bar just
+  // above the top edge: one small scroll up if you want Share, nothing in the
+  // way if you don't.
+  function scrollTo(el) {
+    try {
+      if (el && el.scrollIntoView) el.scrollIntoView({ block: "start" });
+      else window.scrollTo(0, 0);
+    } catch (e) { /* nothing to scroll */ }
+  }
+
   // On a phone the native share sheet IS the answer to "send this to the group":
   // it puts WhatsApp one tap away instead of copy, leave the app, find the chat,
   // paste. Desktop mostly lacks it, so the clipboard is the fallback rather than
@@ -3383,14 +3401,30 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
   // navigator.share REJECTS when the user dismisses the sheet, and reporting
   // that as a failure would tell them something went wrong when they simply
   // changed their mind.
-  function shareRoom(code) {
+  // Mid-room there is no score yet, so the message is an invitation. Once the
+  // six are done it becomes a challenge with a number attached, which is the
+  // version worth sending. Claiming a score before you have one would be the
+  // only dishonest thing this app does.
+  function roomShareMessage(results) {
+    if (!results || results.length < ROOM_ROUNDS) {
+      return "Six Hindi songs, half a second each. Same six for everyone who opens this — see how you do.";
+    }
+    var named = results.filter(function (r) { return r.won; }).length;
+    return "I got " + roomPoints(results) + "/" + ROOM_MAX_POINTS + " on Filmi, " +
+           named + " of " + ROOM_ROUNDS + " songs named. Same six songs for you — try beating it.";
+  }
+
+  function shareRoom(code, results) {
     var url = roomLink(code);
+    var text = roomShareMessage(results);
+    // The sheet keeps text and url as separate fields, and apps lay them out
+    // themselves. A clipboard paste has to carry its own line break.
     var toClipboard = function () {
-      return copyText(url).then(function (ok) { return ok ? "copied" : "failed"; });
+      return copyText(text + "\n" + url).then(function (ok) { return ok ? "copied" : "failed"; });
     };
     try {
       if (window.navigator && window.navigator.share) {
-        return window.navigator.share({ title: "Filmi", url: url }).then(
+        return window.navigator.share({ title: "Filmi", text: text, url: url }).then(
           function () { return "shared"; },
           function (err) {
             return (err && err.name === "AbortError") ? "cancelled" : toClipboard();
@@ -3439,6 +3473,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 
     var audioRef = useRef(null);
     var playerRef = useRef(null);
+    var revealRef = useRef(null);
 
     // Resolved previews, uid -> track, or null for a song with nothing usable
     // behind it. A ref, not state: the async round flow has to read it at the
@@ -3498,6 +3533,12 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
     // songs in one batch a moment later, and this speculative single would be
     // for a song the room is not going to deal.
     useEffect(function () { if (!readHashRoom()) prefetch([]); }, []);
+
+    // An effect rather than a call inside finish(), because the element it
+    // anchors on does not exist until the reveal has rendered.
+    useEffect(function () {
+      if (phase === "won" || phase === "lost") scrollTo(revealRef.current);
+    }, [phase]);
 
     /* ---- the player follows the track, not the other way round ---- */
 
@@ -3908,7 +3949,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
         h("button", {
           className: "roombar-share",
           onClick: function () {
-            shareRoom(room.code).then(function (r) {
+            shareRoom(room.code, room.results).then(function (r) {
               // "shared" and "cancelled" both leave the button alone: the sheet
               // already told the player what happened.
               if (r === "copied" || r === "failed") setCopied(r);
@@ -4027,7 +4068,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
           h("button", {
             className: "btn btn-primary summary-share",
             onClick: function () {
-              shareRoom(room.code).then(function (r) {
+              shareRoom(room.code, room.results).then(function (r) {
                 if (r === "copied" || r === "failed") setCopied(r);
               });
             }
@@ -4062,7 +4103,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
       return frame(h("div", { className: "shell" },
         Masthead(),
         RoomBar(),
-        h("div", { className: "reveal" },
+        h("div", { className: "reveal", ref: revealRef },
           h("div", { className: "verdict " + (phase === "won" ? "win" : "lose") },
             phase === "won"
               ? "Correct in " + guesses.length + (guesses.length === 1 ? " guess" : " guesses")
