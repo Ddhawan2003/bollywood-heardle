@@ -22,7 +22,9 @@ const marker = html.indexOf('(function () {');
 const appStart = html.lastIndexOf('<script>', marker) + 8;
 const APP_SRC = html.slice(appStart, html.indexOf('</script>', appStart)).replace(
   'ReactDOM.createRoot(document.getElementById("root")).render(h(App));',
-  'window.__T = { App: App, CATALOG: CATALOG };'
+  'window.__T = { App: App, CATALOG: CATALOG, roomCandidates: roomCandidates, ' +
+  'newRoomCode: newRoomCode, ROOM_ROUNDS: ROOM_ROUNDS, ' +
+  'CATALOG_TAG: CATALOG_TAG };'
 );
 
 /* ================================================================== */
@@ -46,10 +48,12 @@ function fakeAudio() {
 // store   -> stands in for window.localStorage. Omitted, there is none at all,
 //            which is the sandboxed-Artifact case and the default everywhere
 //            else in this file.
-function createHarness(fixture, respond, store) {
+// hash    -> the fragment the page opens on, without the '#', e.g. 'room=k7f2qm'
+function createHarness(fixture, respond, store, hash) {
   let slots = [], cursor = 0, pendingEffects = [], dirty = false, tree = null;
   let audioEl = null;
   const urls = [];
+  const clip = [];
 
   const sameDeps = (a, b) => a && b && a.length === b.length && a.every((v, i) => Object.is(v, b[i]));
 
@@ -126,6 +130,21 @@ function createHarness(fixture, respond, store) {
   sandbox.window = sandbox;
   if (store) sandbox.localStorage = store;
 
+  // A browser always has these, so the sandbox does too - rooms live entirely in
+  // the URL and there is nothing to test without one.
+  sandbox.location = {
+    origin: 'https://filmi.test', pathname: '/', search: '',
+    hash: hash ? '#' + hash : '',
+  };
+  sandbox.history = {
+    replaceState(_state, _title, url) { sandbox.location.hash = ''; sandbox.location.href = url; },
+  };
+  sandbox.navigator = {
+    clipboard: { writeText(v) { clip.push(String(v)); return Promise.resolve(); } },
+  };
+  sandbox.addEventListener = () => {};
+  sandbox.removeEventListener = () => {};
+
   const ctx = vm.createContext(sandbox);
 
   sandbox.document = {
@@ -174,7 +193,10 @@ function createHarness(fixture, respond, store) {
   return {
     App,
     CATALOG: sandbox.__T.CATALOG,
+    T: sandbox.__T,
     urls,
+    clip,
+    hash: () => sandbox.location.hash,
     audio: () => audioEl,
     render, flush, nodes, find,
     byText: t => find(n => n.type === 'button' && textOf(n).includes(t)),
@@ -588,10 +610,298 @@ async function scoreScenario() {
   ok('still nothing scored', !ui.byClass('scoreline'));
 }
 
+/* ================================================================== */
+/* Scenario 4 - rooms                                                  */
+/* ================================================================== */
+
+// Big enough that a room's six can be filled, and one song (900) has no preview
+// so the "walk the candidate list past the duds" path is exercised for real.
+const ROOM_POOL = Array.from({ length: 14 }, (_, i) => ({
+  title: 'Song ' + i,
+  artist: 'Artist ' + i,
+  movie: 'Film ' + i,
+  trackId: 900 + i,
+}));
+
+function roomReply(url) {
+  const ids = (/[?&]id=([\d,]+)/.exec(url) || [, ''])[1].split(',').filter(Boolean).map(Number);
+  return {
+    resultCount: ids.length,
+    results: ids.map(id => {
+      const song = ROOM_POOL.find(s => s.trackId === id);
+      if (!song) return { trackId: id };
+      // 900 resolves as a request but has nothing playable behind it.
+      if (id === 900) return { trackId: id, trackName: song.title };
+      return {
+        trackId: id,
+        trackName: song.title,
+        artistName: song.artist,
+        collectionName: song.movie + ' (Original Motion Picture Soundtrack)',
+        previewUrl: 'https://audio.example/' + id + '.m4a',
+        artworkUrl100: 'https://art.example/' + id + '/100x100bb.jpg',
+        trackViewUrl: 'https://music.apple.com/in/song/' + id,
+      };
+    }),
+  };
+}
+
+// The six a room will actually deal: its seeded candidate order, minus anything
+// with no preview, capped at six. Computed independently of the app so the
+// assertions have something to be right or wrong against.
+function expectedRoom(ui, code, offline) {
+  const all = ui.T.roomCandidates(code, ui.CATALOG);
+  return (offline ? all : all.filter(s => s.trackId !== 900)).slice(0, ui.T.ROOM_ROUNDS);
+}
+
+// Plays a room to its summary, winning the rounds whose index is in `winRounds`
+// and giving up the rest. `songs` supplies the answers.
+async function playRoom(ui, songs, winRounds) {
+  for (let n = 0; n < songs.length; n++) {
+    if (winRounds.includes(n)) {
+      ui.type(songs[n].title);
+      const opt = ui.options()[0];
+      if (opt) {
+        if (opt.props.onMouseDown) opt.props.onMouseDown({ preventDefault() {} });
+        else opt.props.onClick();
+        ui.flush();
+      }
+      const submit = ui.byText('Submit');
+      if (submit && !submit.props.disabled) ui.click(submit, 'submit guess');
+    } else {
+      const giveUp = ui.byText('Give up');
+      if (giveUp) ui.click(giveUp, 'give up');
+    }
+    await wait(15);
+    ui.flush();
+    const next = ui.find(x => x.type === 'button' && textOf(x).startsWith('Next song')) ||
+                 ui.byText('See your result');
+    if (next) ui.click(next, 'advance');
+    await wait(25);
+    ui.flush();
+  }
+}
+
+const setlistRows = ui => walk(ui.byClass('setlist'), [])
+  .filter(n => typeof n.props.className === 'string' &&
+               n.props.className.split(' ').includes('setlist-row'));
+
+// The title is the <b> inside each row; the <em> beside it holds the film.
+const summaryTitles = ui => setlistRows(ui).map(row => {
+  const b = walk(row, []).find(n => n.type === 'b');
+  return b ? (b.kids || []).filter(k => typeof k === 'string').join('') : '';
+});
+
+async function roomScenario() {
+  console.log('\n--- a room code fixes the songs, and it is the same list every time ---');
+
+  const a = createHarness(ROOM_POOL, roomReply, fakeStore(), 'room=k7f2qm');
+  a.render();
+  await wait(60);
+  a.flush();
+
+  const listA = a.T.roomCandidates('k7f2qm', a.CATALOG).map(s => s.uid);
+  const listB = a.T.roomCandidates('k7f2qm', a.CATALOG).map(s => s.uid);
+  ok('the same code gives the same candidate order', listA.join() === listB.join());
+  ok('a different code gives a different one',
+     a.T.roomCandidates('b3xn9d', a.CATALOG).map(s => s.uid).join() !== listA.join());
+  ok('the candidate list is the whole pool, shuffled, not a subset with repeats',
+     new Set(listA).size === listA.length);
+
+  const wantA = expectedRoom(a, 'k7f2qm');
+  ok('the room opened straight from the URL', !!a.byClass('transport'));
+  ok('the masthead names the room', textOf(a.byClass('scoreline')).includes('k7f2qm'),
+     textOf(a.byClass('scoreline')));
+  ok('and counts the round', textOf(a.byClass('scoreline')).includes('round 1 of 6'),
+     textOf(a.byClass('scoreline')));
+  ok('the running total starts at nothing',
+     valuesOf(a.byClass('scoreline')).includes('0') &&
+     valuesOf(a.byClass('scoreline')).includes('36'),
+     valuesOf(a.byClass('scoreline')));
+  ok('the whole room resolved in one batched request',
+     a.urls.filter(u => u.includes('/lookup')).length === 1,
+     a.urls.length + ' requests');
+  ok('round one plays the first playable candidate',
+     a.audio().src === 'https://audio.example/' + wantA[0].trackId + '.m4a', a.audio().src);
+  ok('the song with no preview was skipped over, not dealt',
+     !wantA.some(s => s.trackId === 900));
+
+  console.log('\n--- the total moves as rounds finish ---');
+  const live = createHarness(ROOM_POOL, roomReply, fakeStore(), 'room=k7f2qm');
+  live.render();
+  await wait(60);
+  live.flush();
+  const liveSongs = expectedRoom(live, 'k7f2qm');
+  await playRoom(live, liveSongs.slice(0, 1), [0]);      // win round 1 outright
+  ok('a first-guess win banks the full six',
+     valuesOf(live.byClass('scoreline')).includes('6'), valuesOf(live.byClass('scoreline')));
+  ok('and the round counter moved with it',
+     textOf(live.byClass('scoreline')).includes('round 2 of 6'),
+     textOf(live.byClass('scoreline')));
+  await playRoom(live, liveSongs.slice(1, 2), []);       // give up round 2
+  ok('a missed round adds nothing',
+     valuesOf(live.byClass('scoreline')).includes('6'), valuesOf(live.byClass('scoreline')));
+  ok('but still advances the room',
+     textOf(live.byClass('scoreline')).includes('round 3 of 6'),
+     textOf(live.byClass('scoreline')));
+
+  console.log('\n--- playing a room through to its summary ---');
+  await playRoom(a, wantA, [0, 2, 4]);
+  ok('the room ends on the summary', !!a.byClass('setlist'));
+  // Every win here lands on the first guess, so each is worth the full six.
+  ok('the score is points, not a count of wins',
+     valuesOf(a.byClass('summary-score')).includes('18'), valuesOf(a.byClass('summary-score')));
+  ok('and it is out of 36', valuesOf(a.byClass('summary-score')).includes('36'),
+     valuesOf(a.byClass('summary-score')));
+  ok('the wins are still stated, under the points',
+     textOf(a.byClass('summary-label')).includes('3 of 6 named'),
+     textOf(a.byClass('summary-label')));
+  ok('a round names what it was worth',
+     textOf(setlistRows(a)[0]).includes('+6'), textOf(setlistRows(a)[0]));
+  ok('a missed round is worth nothing',
+     valuesOf(setlistRows(a)[1]).includes('0'), valuesOf(setlistRows(a)[1]));
+  ok('the set list has one row per round', setlistRows(a).length === 6, setlistRows(a).length);
+  ok('a round that was named is marked won, one that was not is not',
+     setlistRows(a).filter(n => n.props.className.includes('is-won')).length === 3 &&
+     setlistRows(a).filter(n => n.props.className.includes('is-lost')).length === 3,
+     setlistRows(a).map(n => n.props.className).join(' | '));
+  ok('a missed round says so rather than showing a time',
+     textOf(setlistRows(a)[1]).includes('missed'), textOf(setlistRows(a)[1]));
+  ok('the six on the summary are the six the seed chose',
+     summaryTitles(a).join() === wantA.map(s => s.title).join(),
+     summaryTitles(a).join() + ' vs ' + wantA.map(s => s.title).join());
+  ok('the endless record was left alone', !a.byClass('scoreline') ||
+     !valuesOf(a.byClass('scoreline')).includes('streak'), valuesOf(a.byClass('scoreline')));
+
+  // A second, independent player on the same code must end with the same six.
+  const b = createHarness(ROOM_POOL, roomReply, fakeStore(), 'room=k7f2qm');
+  b.render();
+  await wait(60);
+  b.flush();
+  await playRoom(b, expectedRoom(b, 'k7f2qm'), []);
+  ok('a separate player on the same code got the identical six, in order',
+     summaryTitles(b).join() === summaryTitles(a).join(),
+     summaryTitles(b).join());
+  ok('and scored independently of the first',
+     valuesOf(b.byClass('summary-score')).trim().startsWith('0'),
+     valuesOf(b.byClass('summary-score')));
+
+  // The whole reason for points: two players who named the same number of songs
+  // must not read as having done equally well.
+  const slow = createHarness(ROOM_POOL, roomReply, fakeStore(), 'room=k7f2qm');
+  slow.render();
+  await wait(60);
+  slow.flush();
+  const slowSongs = expectedRoom(slow, 'k7f2qm');
+  for (let n = 0; n < 6; n++) {
+    if ([0, 2, 4].includes(n)) {
+      // Same three rounds as `a`, but two skips first, so each win pays 4 not 6.
+      for (let s = 0; s < 2; s++) { const sk = slow.byText('Skip'); if (sk) slow.click(sk, 'skip'); }
+      slow.type(slowSongs[n].title);
+      const opt = slow.options()[0];
+      if (opt) { opt.props.onMouseDown({ preventDefault() {} }); slow.flush(); }
+      const sub = slow.byText('Submit');
+      if (sub && !sub.props.disabled) slow.click(sub, 'submit');
+    } else {
+      const g = slow.byText('Give up');
+      if (g) slow.click(g, 'give up');
+    }
+    await wait(15);
+    slow.flush();
+    const next = slow.find(x => x.type === 'button' && textOf(x).startsWith('Next song')) ||
+                 slow.byText('See your result');
+    if (next) slow.click(next, 'advance');
+    await wait(25);
+    slow.flush();
+  }
+  ok('naming the same three songs more slowly scores lower',
+     valuesOf(slow.byClass('summary-score')).includes('12'),
+     valuesOf(slow.byClass('summary-score')));
+  ok('while still reporting the same number named',
+     textOf(slow.byClass('summary-label')).includes('3 of 6 named'),
+     textOf(slow.byClass('summary-label')));
+
+  console.log('\n--- the link is the only thing worth sharing ---');
+  ok('there is no second share button competing with it', !a.byText('Copy result'));
+  ok('the catalog tag is on screen, where a mismatch can be spotted',
+     textOf(a.byClass('summary-note')).includes(a.T.CATALOG_TAG) ||
+     textOf(a.byClass('summary-tag')).includes(a.T.CATALOG_TAG), a.T.CATALOG_TAG);
+
+  a.click(a.byText('Copy link'), 'copy link');
+  await wait(10);
+  a.flush();
+  ok('the link is a full URL with the room in the hash',
+     a.clip[a.clip.length - 1] === 'https://filmi.test/#room=k7f2qm',
+     a.clip[a.clip.length - 1]);
+  ok('and the button confirms it copied', !!a.byText('Link copied'));
+
+  console.log('\n--- a room is played once ---');
+  const store = fakeStore();
+  const first = createHarness(ROOM_POOL, roomReply, store, 'room=b3xn9d');
+  first.render();
+  await wait(60);
+  first.flush();
+  await playRoom(first, expectedRoom(first, 'b3xn9d'), [1]);
+  ok('the result was saved', !!store.getItem('filmi.room.b3xn9d'));
+
+  const again = createHarness(ROOM_POOL, roomReply, store, 'room=b3xn9d');
+  again.render();
+  await wait(60);
+  again.flush();
+  ok('reopening the link shows the result, not a fresh round',
+     !!again.byClass('setlist') && !again.byClass('transport'));
+
+  // A saved result describes songs a different catalog would not deal.
+  const moved = fakeStore({ 'filmi.room.b3xn9d': JSON.stringify({
+    tag: 'zzzz', results: [{ won: true, attempts: 1 }],
+  }) });
+  const rebuilt = createHarness(ROOM_POOL, roomReply, moved, 'room=b3xn9d');
+  rebuilt.render();
+  await wait(60);
+  rebuilt.flush();
+  ok('a result saved against another catalog is discarded, not replayed',
+     !!rebuilt.byClass('transport') && !rebuilt.byClass('setlist'));
+
+  console.log('\n--- rooms without a network ---');
+  const dark = createHarness(ROOM_POOL, () => null, fakeStore(), 'room=k7f2qm');
+  dark.render();
+  await wait(60);
+  dark.flush();
+  ok('a room still opens when nothing resolves', !!dark.byClass('transport'));
+  ok('and says the audio is stand-in', !!dark.byClass('demochip'));
+  await playRoom(dark, expectedRoom(dark, 'k7f2qm', true), []);
+  ok('an offline room still fills all six rounds',
+     summaryTitles(dark).length === 6, summaryTitles(dark).length);
+  ok('offline it deals the candidate order untouched, duds included',
+     summaryTitles(dark).join() ===
+     expectedRoom(dark, 'k7f2qm', true).map(s => s.title).join(),
+     summaryTitles(dark).join());
+
+  console.log('\n--- generated codes ---');
+  const code = a.T.newRoomCode();
+  ok('a generated code is six opaque characters', /^[a-z0-9]{6}$/.test(code), code);
+  ok('it contains no vowels, so it cannot spell anything', !/[aeiou]/.test(code), code);
+  ok('and none of the characters that are ambiguous read off a screen',
+     !/[01lio]/.test(code), code);
+  ok('it survives a round trip through the URL rules', /^[a-z0-9][a-z0-9-]{1,31}$/.test(code), code);
+
+  console.log('\n--- leaving a room ---');
+  const out = createHarness(ROOM_POOL, roomReply, fakeStore(), 'room=k7f2qm');
+  out.render();
+  await wait(60);
+  out.flush();
+  ok('in a room, with a way out', !!out.byText('← Home'));
+  out.click(out.byText('← Home'), 'home');
+  out.flush();
+  ok('back on the start screen', !!out.byText('Endless / Random'));
+  ok('and the room is gone from the URL', out.hash() === '', JSON.stringify(out.hash()));
+  ok('the start screen offers to make one', !!out.byText('Start a room'));
+}
+
 (async function main() {
   await blockedScenario();
   await onlineScenario();
   await scoreScenario();
+  await roomScenario();
   console.log('\n================  ' + pass + ' passed, ' + fail + ' failed  ================\n');
   process.exit(fail ? 1 : 0);
 })().catch(e => {

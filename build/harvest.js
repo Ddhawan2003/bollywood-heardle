@@ -100,8 +100,9 @@ const COMPOSERS = [
 const ARTISTS = [
   'Anuv Jain', 'Prateek Kuhad', 'AUR', 'King', 'Seedhe Maut',
   'MC STAN', 'KR$NA', 'DIVINE', 'Raftaar', 'Karan Aujla',
-  'Dino James', 'Yashraj', 'Abdul Hannan', 'Ritviz', 'When Chai Met Toast',
-  'Osho Jain', 'Raghav Chaitanya', 'Aditya A', 'Mitraz', 'Zaeden',
+  // Dino James and Osho Jain sat here and were dropped by hand.
+  'Yashraj', 'Abdul Hannan', 'Ritviz', 'When Chai Met Toast',
+  'Raghav Chaitanya', 'Aditya A', 'Mitraz', 'Zaeden',
   // Punjabi-pop and the singles side of playback singers who release outside
   // film. NON_HINDI_LOOSE deliberately lets Punjabi through, which is most of
   // the point of Guru Randhawa, Imran Khan and Ikky.
@@ -129,6 +130,56 @@ const SINGERS = [
   'Neeraj Shridhar', 'Atif Aslam', 'Darshan Raval', 'Tulsi Kumar',
   'Neha Kakkar', 'Dominique Cerejo', 'Amitabh Bhattacharya', 'Akhil Sachdeva',
   'B Praak', 'Guru Randhawa', 'Badshah',
+];
+
+// Songs a player was dealt, blind, and could not name. Ground truth rather than
+// a prediction, which is why they are listed one by one instead of being
+// characterised by a rule: the scoring model was measured against this same
+// sample and it does not separate them - songs the player knew averaged 92.5,
+// songs they did not averaged 88.3, on a range that runs 65 to 112. Nothing in
+// album position or release packaging distinguishes these from the rest, so the
+// only honest way to drop them is by name.
+//
+// Add to this freely. It is checked on title AND film, so a shared title like
+// Tere Bina only loses the one that was actually rejected.
+const REJECTED = [
+  ['Dil Jahan Pe Le Chala (Amit Trivedi)', 'Jubilee'],
+  ['Khamoshiyan', 'Khamoshiyan'],
+  ['Zindagi Tere Naam', 'Yodha'],
+  ['Main Hoon Na', 'Main Hoon Na'],
+  ['Chaiyaan Mein Saiyaan Ki', 'Khuda Haafiz - Chapter 2 Agni Pariksha'],
+  ['Kaboom', 'One By Two'],
+  ['Sapna Jahan', 'Brothers'],
+  ['Kitni Baatein', 'Lakshya'],
+  ['Hauli Hauli', 'De De Pyaar De'],
+  ['Mere Nishaan', 'Oh My God'],
+  ['Meer-E-Kaarwan', 'Lucknow Central'],
+  ['Sofia', '99 Songs'],
+  ['Andekhe Rang', 'Nazar Andaaz'],
+  ['Dua', 'Kurbaan'],
+  ['Chhatriwali - Title Track', 'Chhatriwali'],
+  ['Billi Billi', 'Kisi Ka Bhai Kisi Ki Jaan'],
+  // Non-film, so the second field is empty.
+  ['Bbm', ''],
+  ['Naash', ''],
+  ["We Doin' It Big", ''],
+
+  // Rejected in the same pass but already outside the catalog at the time -
+  // mostly pre-2000, which had just gone to zero. Listed anyway, and the reason
+  // is worth keeping: the first version of this list held only songs that were
+  // still IN the catalog, and dropping the others freed enough quota that Aafat
+  // was promoted straight back in from just below the cutoff. A rejection is a
+  // fact about the player, not about this build's selection.
+  ['Aafat', 'Liger'],
+  ['Aankhon Ki Gustakhiyan', 'Hum Dil De Chuke Sanam'],
+  ['Ishq Bina', 'Taal'],
+  ['Yeh Haseen Vadiyan Yeh Khula Aasman', 'Roja'],
+  ['Ek Ho Gaye Hum Aur Tum', 'Bombay'],
+  ['Dil Haara', 'Tashan'],
+  ['Kuchh Khaas', 'Fashion'],
+  ['Main Teri Hi Rahoon', 'Chhatriwali'],
+  ['Tu Meri Zindagi-Adayein', 'T-Series Mixtape Rewind Season 3'],
+  ['Unstoppable', ''],
 ];
 
 const CONFIG = {
@@ -208,11 +259,21 @@ const CONFIG = {
 // An Action Hero). Far more films release now than any one person tracks, so a
 // large 2020s quota reaches straight into films nobody saw. The 2010s is drawn
 // from a decade already filtered by what stuck, which is why it wins.
+// Then measured again, properly, on a hundred songs drawn the way the app deals
+// them and marked by hand. 71 of 100 known, and the split is unambiguous:
+//
+//   2010s 81%   2020s 64%   2000s 64%   pre-2000 0 of 4
+//
+// pre-2000 goes to zero. It has now been sampled three times and returned 1 of
+// 7 across all of them - a bucket the player recognises roughly one song in
+// seven from is not a hard era, it is a dead round with a soundtrack. Everything
+// it gives up goes to the 2010s, which is not merely the best-known decade here
+// but the best-known by seventeen points.
 const ERAS = [
-  { name: '2020s',    from: 2020, to: 9999, quota: 180 },
-  { name: '2010s',    from: 2010, to: 2019, quota: 540 },
-  { name: '2000s',    from: 2000, to: 2009, quota: 170 },
-  { name: 'pre-2000', from: 1,    to: 1999, quota: 30  },
+  { name: '2020s',    from: 2020, to: 9999, quota: 170 },
+  { name: '2010s',    from: 2010, to: 2019, quota: 620 },
+  { name: '2000s',    from: 2000, to: 2009, quota: 130 },
+  { name: 'pre-2000', from: 1,    to: 1999, quota: 0   },
   { name: 'undated',  from: 0,    to: 0,    quota: 0   },
 ];
 
@@ -232,6 +293,9 @@ const COMPOSER_LIMIT = flag('composers', COMPOSERS.length);
 const SINGER_LIMIT = flag('singers', SINGERS.length);
 const ARTIST_LIMIT = flag('artists', ARTISTS.length);
 const FILM_ONLY = argv.includes('--film-only');   // skip the non-film harvest
+// Writes every chosen song with the score that chose it, so the ranking can be
+// checked against what a player actually recognises instead of assumed to work.
+const DUMP = (function () { const i = argv.indexOf('--dump'); return i === -1 ? null : argv[i + 1]; })();
 
 /* ------------------------------------------------------------------ */
 /* Fetching                                                            */
@@ -474,9 +538,19 @@ function looksLikeCompilation(tracks) {
 // cut whose remixer did not bother to label it.
 const REMIX_ALBUM = /\b(mixes|remixes|party mix|club mix|dj mix|remixed)\b/i;
 
+// A title that still names the film it came from, anywhere in the string. Used
+// only on the NON-film path, where its presence proves the song is not a single.
+const SAYS_FROM = /\(\s*from\b|\bfrom\s+["“]/i;
+
+// Albums the film path can read a plausible film name out of, which are not
+// films: label mixtapes, web-series soundtracks, jukeboxes, best-ofs. "T-Series
+// Mixtape Rewind Season 3" shipped a track as though Rewind Season 3 were a
+// movie nobody had heard of - which, in fairness, is true.
+const BAD_ALBUM = /\b(mixtape|jukebox|best of|greatest hits|season \d|top \d+|all songs)\b/i;
+
 function candidatesFrom(tracks, composer, albumName, rank, albumTotal) {
   const out = [];
-  if (REMIX_ALBUM.test(albumName || '')) return out;
+  if (REMIX_ALBUM.test(albumName || '') || BAD_ALBUM.test(albumName || '')) return out;
 
   // Soundtracks carry alternate cuts beside the original - Tera Deedar Hua and
   // Tera Deedar Hua (From the Heart) sit on the same album. A parenthesised
@@ -632,6 +706,7 @@ async function harvestSingers(filmComposer) {
       const title = tidyTitle(from ? from.title : t.trackName);
       const movie = from ? from.film : filmFromAlbum(t.collectionName);
       if (!title || !movie) continue;
+      if (REMIX_ALBUM.test(t.collectionName || '') || BAD_ALBUM.test(t.collectionName || '')) continue;
       if (BAD_TITLE.test(title)) continue;
       if (NON_HINDI.test(title) || NON_HINDI.test(movie)) continue;
       if (!FILM_GENRE.test(t.primaryGenreName || '')) continue;
@@ -705,6 +780,14 @@ async function harvestArtists() {
       if (!title || BAD_TITLE.test(title)) continue;
       if (NON_HINDI_LOOSE.test(title) || NON_HINDI_LOOSE.test(t.collectionName || '')) continue;
       if (NON_FILM_BAD_GENRE.test(t.primaryGenreName || '')) continue;
+      // unpackFrom below is anchored to the END of the name, and tidyTitle
+      // strips trailing decoration only AFTER that test - so
+      //   Garmi (From "Street Dancer 3D") [feat. Neha Kakkar]
+      // failed the film check, then tidied down to something that looked like a
+      // single and shipped with an empty movie. Two identities for one recording
+      // is the bug this whole guard exists to prevent, so catch the phrase
+      // wherever it sits rather than only at the end.
+      if (SAYS_FROM.test(title)) continue;
 
       // These artists sing on soundtracks too - Raghav Chaitanya is on Animal,
       // and seeding him pulled Hua Main in here as though it had no film. A
@@ -828,7 +911,19 @@ function datePerFilm(candidates) {
 
 const decadeOf = s => (s.year ? Math.floor(s.year / 10) * 10 : 0);
 
+// Built on first use so it does not depend on where norm() sits in this file.
+const rejectedKeys = new Set();
+function isRejected(s) {
+  if (!rejectedKeys.size) {
+    REJECTED.forEach(pair => rejectedKeys.add(norm(pair[0]) + '|' + norm(pair[1])));
+  }
+  return rejectedKeys.has(s.nTitle + '|' + s.nMovie);
+}
+
 function select(candidates, signals) {
+  // Dropped before scoring rather than after selection, so the era quota refills
+  // with the next song down instead of the catalog simply shrinking.
+  candidates = candidates.filter(c => !isRejected(c));
   datePerFilm(candidates);
 
   // One entry per song. Reissues and deluxe editions carry the same recording
@@ -986,6 +1081,7 @@ function write(seeds, harvested) {
     const raw = await harvestArtists();
     const deduped = dropFilmDuplicates(raw, seeds.concat(kept));
     indie = deduped.filter(s => {
+      if (isRejected(s)) return false;
       const key = s.nTitle + '|' + s.nMovie;
       if (seen.has(key) || seenIds.has(s.trackId)) return false;
       seen.add(key); seenIds.add(s.trackId);
@@ -995,6 +1091,15 @@ function write(seeds, harvested) {
                 new Set(indie.map(s => s.seededAs)).size + ' artists' +
                 (raw.length - deduped.length
                   ? ' (' + (raw.length - deduped.length) + ' dropped as film songs in disguise)' : ''));
+  }
+
+  if (DUMP) {
+    fs.writeFileSync(DUMP, JSON.stringify(chosen.map(s => ({
+      title: s.title, movie: s.movie, trackId: s.trackId, score: s.score,
+      year: s.year, composer: s.composer, trackNumber: s.trackNumber,
+      albumPct: Math.round(s.albumPct * 100) / 100,
+    })), null, 1));
+    console.log('  dumped ' + chosen.length + ' scored songs to ' + DUMP);
   }
 
   const merged = seeds.concat(kept, indie);

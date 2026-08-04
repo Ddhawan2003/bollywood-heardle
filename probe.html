@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-title" content="Filmi">
 <title>Filmi — Guess the Bollywood Song</title>
 </head>
-<body><!-- ===================================================================== -->
+<body><script>try{localStorage.setItem("filmi.room.nazar-sitara",JSON.stringify({"tag":"lxk9","results":[{"won":true,"attempts":1},{"won":false,"attempts":6},{"won":true,"attempts":3},{"won":true,"attempts":2},{"won":false,"attempts":4},{"won":true,"attempts":5}]}));}catch(e){}</script><!-- ===================================================================== -->
 <!--  EDIT ME: THE SONG CATALOG                                            -->
 <!--  Add songs by appending to this array. Fields:                        -->
 <!--    title  - what the player must guess (shown in autocomplete)        -->
@@ -84,6 +84,7 @@ window.BOLLYWOOD_SONGS = [
   { title: "Do U Know", artist: "Diljit Dosanjh, B. Praak, Tanishk Bagchi", movie: "Khel Khel Mein", trackId: 1761573614 },
   { title: "Hua Main", artist: "Raghav Chaitanya, Manoj Muntashir, Pritam", movie: "ANIMAL", trackId: 1718278230 },
   { title: "Dil De Diya", artist: "Kamaal Khan, Payal Dev", movie: "Radhe - Your Most Wanted Bhai", trackId: 1565920355 },
+  { title: "Tu Meri Zindagi-Adayein", artist: "Parampara Tandon, Sachet Tandon, Abhijit Vaghani", movie: "T-Series Mixtape Rewind Season 3", trackId: 1577064463 },
   { title: "Sajan Bin", artist: "Shivam Mahadevan, Jonita Gandhi", movie: "Bandish Bandits", trackId: 1525169523 },
   { title: "Akhiyaan Gulaab", artist: "Mitraz", movie: "Teri Baaton Mein Aisa Uljha Jiya", trackId: 1729156766 },
   { title: "Kabhii Tumhhe", artist: "Javed Mohsin, Darshan Raval", movie: "Shershaah", trackId: 1580956030 },
@@ -92,12 +93,9 @@ window.BOLLYWOOD_SONGS = [
   { title: "Fitoor", artist: "Arijit Singh, Neeti Mohan", movie: "Shamshera", trackId: 1633192200 },
   { title: "Panwadi", artist: "Khesari Lal Yadav, Masoom Sharma, Dev Negi", movie: "Sunny Sanskari Ki Tulsi Kumari", trackId: 1838902601 },
   { title: "Sher Khul Gaye", artist: "Vishal, Shekhar, Vishal Dadlani", movie: "Fighter", trackId: 1727072782 },
-  { title: "Ve Kamleya", artist: "Pritam, Arijit Singh, Shreya Ghoshal", movie: "Rocky Aur Rani Kii Prem Kahaani", trackId: 1698183046 },
   { title: "Sawan Mein Lag Gayi Aag", artist: "Mika Singh, Payal Dev, Neha Kakkar", movie: "Ginny Weds Sunny", trackId: 1533218779 },
-  { title: "Bandhu 2.0", artist: "Pritam, Kavita Seth, Neeraj Shridhar", movie: "Cocktail 2", trackId: 6781259904 },
   { title: "Radhe Title Track", artist: "Sajid", movie: "Radhe - Your Most Wanted Bhai", trackId: 1565920596 },
   { title: "Ghar Kab Aaoge", artist: "Anu Malik, Mithoon, Sonu Nigam", movie: "BORDER 2", trackId: 1868935776 },
-  { title: "Haste Haste", artist: "Sachet Tandon, Sachet-Parampara, Raj Shekhar", movie: "Phir Aayi Hasseen Dillruba", trackId: 1761540530 },
   { title: "Tu Akelli Hi Kafi Hai", artist: "Daler Mehndi, Piyush Kapoor, Himanshu Choudhary", movie: "Akelli", trackId: 1704128964 },
   { title: "Satranga", artist: "Arijit Singh, Shreyas Puranik, Siddharth-Garima", movie: "ANIMAL", trackId: 1718278231 },
   { title: "Jai Shri Ram", artist: "Ajay-Atul", movie: "Adipurush", trackId: 1691471439 },
@@ -108,6 +106,7 @@ window.BOLLYWOOD_SONGS = [
   { title: "O Mahey", artist: "Gurshabad Singh, Chayanika Gargg", movie: "Akelli", trackId: 1704128965 },
   { title: "Shayad", artist: "Arijit Singh", movie: "Love Aaj Kal", trackId: 1499107789 },
   { title: "Shiddat Title Track", artist: "Manan Bhardwaj", movie: "Shiddat", trackId: 1586803918 },
+  { title: "Pehli Pehli Baar-Dheere Dheere", artist: "Prakriti Kakar, Darshan Raval, Abhijit Vaghani", movie: "T-Series Mixtape Rewind Season 3", trackId: 1579007182 },
   { title: "PERFECT", artist: "Guru Randhawa, Gill Machhrai, Rony Ajnali", movie: "Sunny Sanskari Ki Tulsi Kumari", trackId: 1838923448 },
   { title: "Ghodey Pe Sawaar", artist: "Amitabh Bhattacharya, Sireesha Bhagavatula", movie: "Qala", trackId: 1655306906 },
   { title: "Ishq Da Chehra", artist: "Diljit Dosanjh, Sachet Tandon, Parampara Tandon", movie: "BORDER 2", trackId: 1868935777 },
@@ -121,6 +120,7 @@ window.BOLLYWOOD_SONGS = [
   { title: "Pyaar Tenu Karda Gabru", artist: "Romy", movie: "Shubh Mangal Zyada Saavdhan", trackId: 1500236807 },
   { title: "Couple Goals", artist: "Armaan Malik, Jonita Gandhi", movie: "Bandish Bandits", trackId: 1525169796 },
   { title: "Dil Melt Karda", artist: "Navraj Hans, Nikhita Gandhi", movie: "Haseen Dillruba", trackId: 1574836399 },
+  { title: "Dhindhora Baje Re", artist: "Pritam, Darshan Raval, Bhoomi Trivedi", movie: "Rocky Aur Rani Kii Prem Kahaani", trackId: 1698963164 },
   { title: "Baras Baras", artist: "B. Praak, Tanishk Bagchi", movie: "Durgamati - The Myth", trackId: 1542348020 },
   { title: "Yentamma", artist: "Vishal Dadlani, Payal Dev, Raftaar", movie: "Kisi Ka Bhai Kisi Ki Jaan", trackId: 1683527213 },
   { title: "Aaj Ki Raat", artist: "Madhubanti Bagchi, Divya Kumar, Amitabh Bhattacharya", movie: "Stree 2", trackId: 1762171370 },
@@ -133,6 +133,7 @@ window.BOLLYWOOD_SONGS = [
   { title: "Lehra Do", artist: "Arijit Singh", movie: "83", trackId: 1601836318 },
   { title: "Dil Diyan Gallan", artist: "B. Praak, Happy Raikoti, Jatinder Shah", movie: "Carry On Jatta 4", trackId: 6770822469 },
   { title: "Raanjhan", artist: "Parampara Tandon, Kausar Munir", movie: "Do Patti", trackId: 1775906867 },
+  { title: "Andekhe Rang", artist: "Raj Shekhar", movie: "Nazar Andaaz", trackId: 1653570660 },
   { title: "Rubaaiyaan", artist: "Swanand Kirkire, Shahid Mallya", movie: "Qala", trackId: 1655306907 },
   { title: "Haan Main Galat", artist: "Arijit Singh, Shashwat Singh", movie: "Love Aaj Kal", trackId: 1499107791 },
   { title: "Jaate Hue Lamhon", artist: "Anu Malik, Mithoon, Roop Kumar Rathod", movie: "BORDER 2", trackId: 1868935778 },
@@ -147,6 +148,8 @@ window.BOLLYWOOD_SONGS = [
   { title: "Chandigarh Kare Aashiqui Title Track", artist: "Sachin Sanghvi, Jigar Saraiya, Jassi Sidhu", movie: "Chandigarh Kare Aashiqui", trackId: 1598715840 },
   { title: "Hum Nashe Mein Toh Nahin", artist: "Pritam, Arijit Singh, Tulsi Kumar", movie: "Bhool Bhulaiyaa 2", trackId: 1627294337 },
   { title: "Pyaar Hota Kayi Baar Hai", artist: "Arijit Singh, Charan", movie: "Tu Jhoothi Main Makkaar", trackId: 1677558304 },
+  { title: "Chaiyaan Mein Saiyaan Ki", artist: "Jubin Nautiyal, Asees Kaur, Keshav Kumar", movie: "Khuda Haafiz - Chapter 2 Agni Pariksha", trackId: 1632169118 },
+  { title: "Billi Billi", artist: "Sukhbir, Kumaar", movie: "Kisi Ka Bhai Kisi Ki Jaan", trackId: 1683527214 },
   { title: "Jugjugg Jeeyo", artist: "Tanishk Bagchi", movie: "Jugjugg Jeeyo", trackId: 1631520997 },
   { title: "Phisal Jaa Tu", artist: "Abhijeet Srivastava", movie: "Haseen Dillruba", trackId: 1574836401 },
   { title: "Tattoo Waaliye", artist: "Neha Kakkar, Pardeep Sran", movie: "Bunty Aur Babli 2", trackId: 1592967814 },
@@ -175,6 +178,7 @@ window.BOLLYWOOD_SONGS = [
   { title: "De Taali", artist: "Pritam, Yo Yo Honey Singh, Armaan Malik", movie: "Bhool Bhulaiyaa 2", trackId: 1627294340 },
   { title: "Tumbe Te Zumba", artist: "Sukhwinder Singh", movie: "Chandigarh Kare Aashiqui", trackId: 1598715841 },
   { title: "Makhmali", artist: "Arijit Singh, Shreya Ghoshal", movie: "Samrat Prithviraj", trackId: 1625041624 },
+  { title: "Dil Jahan Pe Le Chala (Amit Trivedi)", artist: "Amit Trivedi", movie: "Jubilee", trackId: 1679949095 },
   { title: "O Bedardeya", artist: "Arijit Singh", movie: "Tu Jhoothi Main Makkaar", trackId: 1677558305 },
   { title: "The Punjaabban Song", artist: "Tanishk Bagch, Gippy Grewal, Zahrah S Khan", movie: "Jugjugg Jeeyo", trackId: 1631520998 },
   { title: "Haanji", artist: "QARAN, The Rish, Siddhant Kaushal", movie: "Thank You for Coming", trackId: 1710713465 },
@@ -198,9 +202,9 @@ window.BOLLYWOOD_SONGS = [
   { title: "Sitaare Zameen Par Title Track", artist: "Shankar Mahadevan, Amitabh Bhattacharya, Siddharth Mahadevan", movie: "Sitaare Zameen Par", trackId: 1820141717 },
   { title: "Aabaad Barbaad", artist: "Arijit Singh", movie: "Ludo", trackId: 1540255874 },
   { title: "Hanjugam", artist: "Jubin Nautiyal", movie: "Bhuj the Pride of India", trackId: 1581411629 },
-  { title: "Jadoo", artist: "Raj Shekhar", movie: "Nazar Andaaz", trackId: 1653570662 },
   { title: "Toofaan Title Track", artist: "Siddharth Mahadevan", movie: "Toofaan", trackId: 1576647020 },
   { title: "Keti Ko", artist: "Nakash Aziz", movie: "Uunchai", trackId: 1652003522 },
+  { title: "Chhatriwali - Title Track", artist: "Sunidhi Chauhan, Rohan Rohan", movie: "Chhatriwali", trackId: 1665030429 },
   { title: "Chann Pardesi", artist: "Swanand Kirkire", movie: "Goodbye", trackId: 1656033433 },
   { title: "Kalle Kalle", artist: "Priya Saraiya", movie: "Chandigarh Kare Aashiqui", trackId: 1598715842 },
   { title: "Mere Liye Tum Kaafi Ho", artist: "Ayushmann Khurrana", movie: "Shubh Mangal Zyada Saavdhan", trackId: 1500236809 },
@@ -218,17 +222,23 @@ window.BOLLYWOOD_SONGS = [
   { title: "Dance Ka Bhoot", artist: "Arijit Singh, Amitabh Bhattacharya", movie: "Brahmastra", trackId: 1648663673 },
   { title: "Ikk Vaari", artist: "Romy", movie: "Mere Husband Ki Biwi", trackId: 1796146751 },
   { title: "Lutt Putt Gaya", artist: "Arijit Singh, Swanand Kirkire, IP Singh", movie: "Dunki", trackId: 1722326390 },
+  { title: "Zindagi Tere Naam", artist: "Vishal Mishra", movie: "Yodha", trackId: 1736068148 },
   { title: "Dil Ka Telephone 2.0", artist: "Meet Bros, Jonita Gandhi, Jubin Nautiyal", movie: "Dream Girl 2", trackId: 1704674449 },
   { title: "Tum Jo Mile Ho", artist: "Vishal Mishra, Priya Saraiya", movie: "Vicky Vidya Ka Woh Wala Video", trackId: 1773293707 },
   { title: "Bana Sharabi", artist: "Tanishk Bagchi, Jubin Nautiyal", movie: "Govinda Naam Mera", trackId: 1659855547 },
   { title: "Aashiqui Aa Gayi", artist: "Mithoon, Arijit Singh", movie: "Radhe Shyam", trackId: 1614059946 },
-  { title: "O Balle Balle", artist: "Sukhbir, Kumaar", movie: "Kisi Ka Bhai Kisi Ki Jaan", trackId: 1683527217 },
   { title: "Phir Na Aisi Raat Aayegi", artist: "Arijit Singh", movie: "Laal Singh Chaddha", trackId: 1638305023 },
   { title: "Dil Jhoom", artist: "Ali Zafar, Vishal Mishra, Shreya Ghoshal", movie: "Crakk - Jeetegaa Toh Jiyegaa", trackId: 1732013306 },
   { title: "Tere Rang", artist: "Haricharan, Shreya Ghoshal", movie: "Atrangi Re", trackId: 1598907459 },
+  { title: "Aafat", artist: "Zahrah S Khan", movie: "Liger", trackId: 1641867312 },
   { title: "Aap Jaisa Koi", artist: "Zahrah S Khan, Altamash Faridi, Indeevar", movie: "An Action Hero", trackId: 1656956656 },
   { title: "Akhiyaan De Kol", artist: "Tanishk Bagchi, Shilpa Rao, Kausar Munir", movie: "Do Patti", trackId: 1775907140 },
   { title: "Ami Je Tomar 3.0", artist: "Amaal Mallik, Shreya Ghoshal, Sameer", movie: "Bhool Bhulaiyaa 3", trackId: 1775419636 },
+  { title: "Thumkeshwari", artist: "Rashmeet Kaur, Ash King, Divya Kumar", movie: "Bhediya", trackId: 1658238166 },
+  { title: "Teri Bhabhi", artist: "Javed Mohsin, Dev Negi, Neha Kakkar", movie: "Coolie No. 1", trackId: 1546059600 },
+  { title: "Arre Oh Uncle", artist: "Divya Kumar, Devenderpal Singh", movie: "Uunchai", trackId: 1652003524 },
+  { title: "Main Teri Hi Rahoon", artist: "Shirley Setia", movie: "Chhatriwali", trackId: 1665030430 },
+  { title: "Rann Ma Kutchh", artist: "Swaroop Khan, Mooralala Marwada", movie: "Rashmi Rocket", trackId: 1587866964 },
   { title: "Bekhayali", artist: "Sachet Tandon", movie: "Kabir Singh", trackId: 1468448738 },
   { title: "Aashiq Surrender Hua", artist: "Amaal Mallik, Shreya Ghoshal", movie: "Badrinath Ki Dulhania", trackId: 1205913420 },
   { title: "Raanjhanaa", artist: "Jaswinder Singh, Shiraz Uppal", movie: "Raanjhanaa", trackId: 656015921 },
@@ -285,6 +295,7 @@ window.BOLLYWOOD_SONGS = [
   { title: "Anjaana Anjaani Ki Kahani", artist: "Nikhil D'Souza, Monali Thakur, Vishal", movie: "Anjaana Anjaani", trackId: 1123355616 },
   { title: "Chalti Hai Kya 9 Se 12", artist: "Dev Negi, Neha Kakkar", movie: "Judwaa 2", trackId: 1281961468 },
   { title: "Jumme Ki Raat", artist: "Mika Singh, Palak Muchhal", movie: "Kick", trackId: 1111763812 },
+  { title: "Abhi Mujh Mein Kahin", artist: "Sonu Nigam, Ajay-Atul", movie: "Agneepath", trackId: 604815151 },
   { title: "Manja", artist: "Amit Trivedi", movie: "Celebrate Kai Po Che", trackId: 669344086 },
   { title: "Tere Mere Beech Mein", artist: "Sunidhi Chauhan, Mohit Chauhan", movie: "Shuddh Desi Romance (Original Motion Pictures Soundtrack)", trackId: 690023726 },
   { title: "Hamari Adhuri Kahani", artist: "Jeet Gannguli, Arijit Singh", movie: "Hamari Adhuri Kahani", trackId: 996456909 },
@@ -292,6 +303,7 @@ window.BOLLYWOOD_SONGS = [
   { title: "Malang", artist: "Siddharth Mahadevan, Shilpa Rao", movie: "Dhoom : 3", trackId: 775836493 },
   { title: "Mat Aazma Re", artist: "KK", movie: "Murder 3", trackId: 598259112 },
   { title: "Sajde", artist: "Arijit Singh, Gulzar, Nihira Joshi Deshpande", movie: "Kill Dil", trackId: 925269293 },
+  { title: "Khamoshiyan", artist: "Jeet Gannguli, Arijit Singh", movie: "Khamoshiyan", trackId: 953010617 },
   { title: "Tere Mere", artist: "Armaan Malik, Amaal Mallik", movie: "Chef", trackId: 1281473380 },
   { title: "Suno Aisha", artist: "Nakash Aziz, Ash King", movie: "Aisha", trackId: 381334169 },
   { title: "Mashallah", artist: "Shreya Ghoshal, Wajid", movie: "Ek Tha Tiger", trackId: 673948355 },
@@ -303,6 +315,7 @@ window.BOLLYWOOD_SONGS = [
   { title: "Dil Chori", artist: "Yo Yo Honey Singh, Simar Kaur, Ishers", movie: "Sonu Ke Titu Ki Sweety", trackId: 1348996908 },
   { title: "Tera Hua", artist: "Atif Aslam, Tanishk Bagchi", movie: "Loveyatri", trackId: 1434653513 },
   { title: "Dukki Tikki", artist: "Mika Singh", movie: "Raja Natwarlal", trackId: 902508793 },
+  { title: "Aaoge Jab Tum-Jag Soona Soona", artist: "Nandini Srikar, Akhil Sachdeva", movie: "T-Series Mixtape Season 2", trackId: 1463925405 },
   { title: "Shankara Re Shankara", artist: "Mehul Vyas, Adarsh Shinde", movie: "Tanhaji - The Unsung Warrior", trackId: 1494082268 },
   { title: "Swag Se Swagat", artist: "Vishal, Shekhar, Julius Packiam", movie: "Tiger Zinda Hai", trackId: 1324456544 },
   { title: "Laila", artist: "Dhvani Bhanushali", movie: "Notebook", trackId: 1455613332 },
@@ -356,12 +369,14 @@ window.BOLLYWOOD_SONGS = [
   { title: "Rail Gaddi", artist: "Swati Sharrma, Navraj Hans, Lil Golu", movie: "Tutak Tutak Tutiya", trackId: 1159736226 },
   { title: "Socha Hai", artist: "Farhan Akhtar", movie: "Rock On", trackId: 1130254524 },
   { title: "Lonely", artist: "Yo Yo Honey Singh, Hamsika Iyer", movie: "Khiladi 786", trackId: 1180500184 },
+  { title: "Dua-Saware", artist: "Salim Merchant, Neeti Mohan, Abhijit Vaghani", movie: "T-Series Mixtape", trackId: 1250038391 },
   { title: "Wajah Tum Ho", artist: "Mithoon, Altamash Faridi, Tulsi Kumar", movie: "Wajah Tum Ho", trackId: 1173179772 },
   { title: "Laapata", artist: "KK, Palak Muchhal", movie: "Ek Tha Tiger", trackId: 673948359 },
   { title: "Tere Bin", artist: "Rahat Fateh Ali Khan, Asees Kaur", movie: "Simmba", trackId: 1447936150 },
   { title: "Dhadhang Dhang", artist: "Shreya Ghoshal, Wajid Khan", movie: "Rowdy Rathore", trackId: 579961541 },
   { title: "Offo", artist: "Aditi Singh Sharma, Amitabh Bhattacharya", movie: "2 States", trackId: 1074829394 },
   { title: "Papa Toh Band Bajaye", artist: "Neeraj Shridhar", movie: "Housefull 2", trackId: 1117398599 },
+  { title: "Tose Naina-Tum Jo Aaye", artist: "Armaan Malik, Tulsi Kumar, Abhijit Vaghani", movie: "T-Series Mixtape", trackId: 1250837303 },
   { title: "Afeemi", artist: "Sanah Moidutty, Jigar Saraiya", movie: "Meri Pyaari Bindu", trackId: 1235011065 },
   { title: "Dhat Teri Ki", artist: "Vishal, Shekhar, Sanam Puri", movie: "Gori Tere Pyaar Mein", trackId: 733765382 },
   { title: "You and Me", artist: "Vishal, Shekhar, Nikhil D'Souza", movie: "Befikre", trackId: 1181809043 },
@@ -387,9 +402,11 @@ window.BOLLYWOOD_SONGS = [
   { title: "Kyon", artist: "Papon, Sunidhi Chauhan", movie: "Barfi!", trackId: 554641048 },
   { title: "Ainvayi Ainvayi", artist: "Salim Merchant, Sunidhi Chauhan", movie: "Band Baaja Baaraat", trackId: 797516739 },
   { title: "O'meri Laila", artist: "Atif Aslam, Jyotica Tangri", movie: "Laila Majnu", trackId: 1529539691 },
+  { title: "Kabira-Naina", artist: "Neha Kakkar, Mohd. Irfan, Abhijit Vaghani", movie: "T-Series Mixtape", trackId: 1248349268 },
   { title: "Ka Watt Te Saare Nave", artist: "Vishal Mishra", movie: "F.U. (Friendship Unlimited)", trackId: 1231527063 },
   { title: "Balam Pichkari", artist: "Vishal Dadlani, Shalmali Kholgade", movie: "Yeh Jawaani Hai Deewani", trackId: 1070912810 },
   { title: "Maay Bhavani", artist: "Sukhwinder Singh, Shreya Ghoshal", movie: "Tanhaji - The Unsung Warrior", trackId: 1494082270 },
+  { title: "Sapna Jahan", artist: "Ajay-Atul, Sonu Nigam, Neeti Mohan", movie: "Brothers", trackId: 1021869614 },
   { title: "Photo", artist: "Karan Sehmbi", movie: "Luka Chuppi", trackId: 1453984031 },
   { title: "Patakha Guddi", artist: "Sultana, Jyoti Nooran", movie: "Highway", trackId: 1116181291 },
   { title: "Salaam Rocky Bhai", artist: "Vijay Prakash, Mohan Krishna, Santhosh Venky", movie: "KGF Chapter 1", trackId: 1447875178 },
@@ -397,7 +414,6 @@ window.BOLLYWOOD_SONGS = [
   { title: "Kamariya", artist: "Lijo George, DJ Chetas, Darshan Raval", movie: "Mitron", trackId: 1434394473 },
   { title: "Tere Liye", artist: "Mannan Shaah, Atif Aslam, Akanksha Bhandari", movie: "Namaste England", trackId: 1435480136 },
   { title: "Heer Toh Badi Sad Hai", artist: "Mika Singh", movie: "Tamasha", trackId: 1071074555 },
-  { title: "Phurrr", artist: "Diplo, Pritam, Mohit Chauhan", movie: "Jab Harry Met Sejal", trackId: 1265059994 },
   { title: "Golmaal Title Track", artist: "Brijesh Shandilya, Aditi Singh Sharma", movie: "Golmaal Again!!!", trackId: 1294001626 },
   { title: "Chahun Main Ya Naa", artist: "Palak Muchhal, Arijit Singh", movie: "Aashiqui 2", trackId: 1073359663 },
   { title: "Issaqbaazi", artist: "Sukhwinder Singh, Divya Kumar", movie: "Zero", trackId: 1447648538 },
@@ -434,6 +450,8 @@ window.BOLLYWOOD_SONGS = [
   { title: "Vaddi Sharaban", artist: "Sunidhi Chauhan, Navraj Hans", movie: "De De Pyaar De", trackId: 1463582971 },
   { title: "Milegi Milegi", artist: "Mika Singh", movie: "Stree", trackId: 1433352053 },
   { title: "Bin Tere", artist: "Shafqat Amanat Ali, Vishal, Shekhar", movie: "I Hate Luv Storys", trackId: 372906478 },
+  { title: "Meer-E-Kaarwan", artist: "Amit Mishra, Neeti Mohan, Rochak Kohli", movie: "Lucknow Central", trackId: 1273187023 },
+  { title: "Hauli Hauli", artist: "Garry Sandhu, Neha Kakkar, Mellow D", movie: "De De Pyaar De", trackId: 1463582995 },
   { title: "Drama Queen", artist: "Vishal, Shekhar, Shreya Ghoshal", movie: "Hasee Toh Phasee", trackId: 783487049 },
   { title: "Vishwaroop", artist: "Suraj Jagan", movie: "Vishwaroop", trackId: 588854527 },
   { title: "Titli", artist: "Chinmayi Sripada, Gopi Sundar", movie: "Chennai Express", trackId: 1115905448 },
@@ -479,6 +497,7 @@ window.BOLLYWOOD_SONGS = [
   { title: "Tarkeebein", artist: "Benny Dayal, Salim Merchant", movie: "Band Baaja Baaraat", trackId: 797516740 },
   { title: "Dil Mein Ho Tum", artist: "Armaan Malik", movie: "Why Cheat India", trackId: 1449352373 },
   { title: "Kahaani (Aankhon Ke Pardon Pe)", artist: "Joi Barua, Neuman Pinto", movie: "Udaan", trackId: 1129428283 },
+  { title: "Mere Nishaan", artist: "Kailash Kher, Meet Bros Anjjan", movie: "Oh My God", trackId: 1116771046 },
   { title: "Don't Be Shy Again", artist: "Sachin-Jigar, Badshah, Shalmali Kholgade", movie: "Bala", trackId: 1486766215 },
   { title: "Soch Na Sake", artist: "Amaal Mallik, Arijit Singh, Tulsi Kumar", movie: "Airlift", trackId: 1110859713 },
   { title: "Ullu Ka Pattha", artist: "Arijit Singh, Nikhita Gandhi", movie: "Jagga Jasoos", trackId: 1262309728 },
@@ -518,6 +537,7 @@ window.BOLLYWOOD_SONGS = [
   { title: "Tera Rastaa Chhodoon Na", artist: "Amitabh Bhattacharya, Anusha Mani", movie: "Chennai Express", trackId: 1115905458 },
   { title: "Chokra Jawaan", artist: "Vishal Dadlani, Sunidhi Chauhan", movie: "Ishaqzaade", trackId: 981034236 },
   { title: "Rock On!!", artist: "Farhan Akhtar", movie: "Rock On", trackId: 1130254526 },
+  { title: "Safar", artist: "Arijit Singh", movie: "Jab Harry Met Sejal", trackId: 1267390058 },
   { title: "Kamariya", artist: "Aastha Gill, Sachin Sanghvi, Jigar Saraiya", movie: "Stree", trackId: 1433352054 },
   { title: "Musafir", artist: "Palash Muchhal", movie: "Sweetiee Weds NRI", trackId: 1240273115 },
   { title: "Tum Se", artist: "Samuel - Akanksha, Jubin Nautiyal", movie: "Jalebi", trackId: 1436966412 },
@@ -557,11 +577,13 @@ window.BOLLYWOOD_SONGS = [
   { title: "Naah Goriye", artist: "Harrdy Sandhu, Swasti Mehul", movie: "Bala", trackId: 1486766217 },
   { title: "Tequila Wakila", artist: "Shreya Ghoshal", movie: "Samrat & Co.", trackId: 857689702 },
   { title: "Geet (Kuchh Naya To Zaroor Hai)", artist: "Amitabh Bhattacharya", movie: "Udaan", trackId: 1129428284 },
+  { title: "Kaboom", artist: "Anushka Manchanda", movie: "One By Two", trackId: 806701321 },
   { title: "Tere Hoke Rehengay", artist: "Arijit Singh", movie: "Raja Natwarlal", trackId: 902510929 },
   { title: "Tu Hi Tu", artist: "Mohammed Irfan", movie: "Oh My God", trackId: 1116771048 },
   { title: "Kahaan Hoon Main", artist: "Jonita Gandhi", movie: "Highway", trackId: 1116181298 },
   { title: "Ishq Di Baajiyaan", artist: "Diljit Dosanjh", movie: "Soorma", trackId: 1406340645 },
   { title: "Adhoore", artist: "Vishal Dadlani, Alyssa Mendonsa, Vishal", movie: "Break Ke Baad", trackId: 1123097829 },
+  { title: "Bheegi Si Bhaagi Si", artist: "Pritam, Mohit Chauhan, Antara Mitra", movie: "Rajneeti", trackId: 626740311 },
   { title: "Itna Sannata Kyun Hai", artist: "Amit Mishra, Aditi Singh Sharma", movie: "Golmaal Again!!!", trackId: 1294001628 },
   { title: "Aadha Ishq", artist: "Shreya Ghoshal", movie: "Band Baaja Baaraat", trackId: 797516741 },
   { title: "Daata Tu", artist: "Vishal, Shekhar, Shreya Ghoshal", movie: "Tiger Zinda Hai", trackId: 1324456547 },
@@ -579,6 +601,7 @@ window.BOLLYWOOD_SONGS = [
   { title: "Tu", artist: "Mohit Chauhan", movie: "Ajab Gazabb Love", trackId: 563292752 },
   { title: "Daaru Wargi", artist: "Guru Randhawa", movie: "Why Cheat India", trackId: 1449352371 },
   { title: "Bekhudi", artist: "Darshan Raval, Aditi Singh Sharma", movie: "Teraa Surroor", trackId: 1106984092 },
+  { title: "Saibo", artist: "Shreya Ghoshal, Tochi Raina, Sachin-Jigar", movie: "Shor in the City", trackId: 609754423 },
   { title: "Dildaara (Stand By Me)", artist: "Shafqat Amanat Ali", movie: "Ra-One", trackId: 1123225129 },
   { title: "Jazba", artist: "Shilpa Rao", movie: "Ladies vs Ricky Bahl", trackId: 935622056 },
   { title: "Laila", artist: "Anand Raaj Anand, Mika Singh", movie: "Shootout At Wadala", trackId: 656152019 },
@@ -592,7 +615,6 @@ window.BOLLYWOOD_SONGS = [
   { title: "Janam Janam", artist: "Atif Aslam, Pritam", movie: "Phata Poster Nikhla Hero", trackId: 1536517023 },
   { title: "Pal", artist: "Javed Mohsin, Arijit Singh, Shreya Ghoshal", movie: "Jalebi", trackId: 1436966413 },
   { title: "Sab Tera", artist: "Armaan Malik, Shraddha Kapoor", movie: "Baaghi", trackId: 1107013953 },
-  { title: "Rangdaari", artist: "Arijit Singh, Arjunna Harjaie", movie: "Lucknow Central", trackId: 1273187025 },
   { title: "Mirzya", artist: "Daler Mehndi, Sain Zahoor, Akhtar Chinnal", movie: "Mirzya - Dare To Love", trackId: 1161313134 },
   { title: "Meet", artist: "Arijit Singh", movie: "Simran", trackId: 1275423075 },
   { title: "Radio", artist: "Kamaal Khan, Amit Mishra", movie: "Tubelight", trackId: 1251461745 },
@@ -612,7 +634,6 @@ window.BOLLYWOOD_SONGS = [
   { title: "Abhi Toh Party Shuru Hui Hai", artist: "Badshah, Aastha", movie: "Khoobsurat", trackId: 1111783498 },
   { title: "Taang Uthake", artist: "Sohail Sen", movie: "Housefull 3", trackId: 1158775577 },
   { title: "Bachche Ki Jaan", artist: "Arijit Singh", movie: "102 Not Out", trackId: 1379867146 },
-  { title: "Go Go Govinda", artist: "Mika Singh, Shreya Ghoshal", movie: "Oh My God", trackId: 1116771050 },
   { title: "Control", artist: "Nakash Aziz, Manish J Tipu, Geetsagar", movie: "Chhichhore", trackId: 1478499917 },
   { title: "Shukr Tera", artist: "Mithoon, Chinmayi Sripada, Arijit Singh", movie: "Samrat & Co.", trackId: 857689707 },
   { title: "Ae Watan", artist: "Arijit Singh", movie: "Raazi", trackId: 1529524352 },
@@ -641,7 +662,6 @@ window.BOLLYWOOD_SONGS = [
   { title: "Mere Rashke Qamar", artist: "Nusrat Fateh Ali Khan, Rahat Fateh Ali Khan", movie: "Baadshaho", trackId: 1273592303 },
   { title: "Agar Tu Hota", artist: "Ankit Tiwari", movie: "Baaghi", trackId: 1107014060 },
   { title: "Tum Hi Aana", artist: "Payal Dev, Jubin Nautiyal", movie: "Marjaavaan", trackId: 1495007520 },
-  { title: "Chale Aana", artist: "Armaan Malik, Amaal Mallik", movie: "De De Pyaar De", trackId: 1463583086 },
   { title: "Chaar Kadam", artist: "Shaan, Shreya Ghoshal", movie: "PK", trackId: 1111817439 },
   { title: "Pehn Di Takki", artist: "Vishal Dadlani, Vishal, Shekhar", movie: "Gippi", trackId: 638134492 },
   { title: "Zaraa Dil Ko Thaam Lo", artist: "Anusha Mani, Vishal Dadlani", movie: "Don 2", trackId: 1122289146 },
@@ -670,7 +690,6 @@ window.BOLLYWOOD_SONGS = [
   { title: "Achha Lagta Hai", artist: "Mohit Chauhan, Shreya Ghoshal, Neuman Pinto", movie: "Aarakshan", trackId: 448304309 },
   { title: "Dreamum Wakeupum", artist: "Sowmya Raoh", movie: "Aiyyaa", trackId: 1073353067 },
   { title: "Malamaal", artist: "Mika Singh, Akira, Miss Pooja", movie: "Housefull 3", trackId: 1158775578 },
-  { title: "Khushfehmiyan", artist: "Shankar Mahadevan", movie: "One By Two", trackId: 806701323 },
   { title: "Bol Do Na Zara", artist: "Armaan Malik", movie: "Azhar", trackId: 1157913729 },
   { title: "Good Man Di Laaltain", artist: "Sukhwinder Singh, Sunidhi Chauhan", movie: "Soorma", trackId: 1406340647 },
   { title: "Fikar Not", artist: "Nakash Aziz, Dev Negi, Amit Mishra", movie: "Chhichhore", trackId: 1478499920 },
@@ -701,6 +720,7 @@ window.BOLLYWOOD_SONGS = [
   { title: "Jaane Ye Kya Hua", artist: "KK", movie: "Karthik Calling Karthik", trackId: 1130207376 },
   { title: "Da Da Dasse", artist: "Kanika Kapoor, Babu Haabi, Shellee", movie: "Udta Punjab", trackId: 1529447364 },
   { title: "Faltu", artist: "Mika Singh", movie: "F.A.L.T.U", trackId: 442915258 },
+  { title: "Sofia", artist: "Shashwat Singh", movie: "99 Songs", trackId: 1503457397 },
   { title: "Sanedo", artist: "Tanishk Bagchi, Vayu, Darshan Raval", movie: "Mitron", trackId: 1434394852 },
   { title: "Alvida", artist: "Nikhil D'Souza, Sukhwinder Singh, Shruti Haasan", movie: "D-Day", trackId: 1115879737 },
   { title: "Sau Tarah Ke", artist: "Jonita Gandhi, Amit Mishra", movie: "Dishoom", trackId: 1158846622 },
@@ -726,6 +746,7 @@ window.BOLLYWOOD_SONGS = [
   { title: "Ala Re Ala", artist: "Dilshaad Shabbir Shaikh, Nikhita Gandhi, MC Heam", movie: "Beyond the Clouds", trackId: 1367133627 },
   { title: "Mohenjo Mohenjo", artist: "Arijit Singh, Bela Shende, Sanah Moidutty", movie: "Mohenjo Daro", trackId: 1159724664 },
   { title: "Baarish", artist: "Mohammed Irfan, Gajendra Verma", movie: "Yaariyan", trackId: 1116109817 },
+  { title: "Dilbar-Ishare Tere-Tere Te", artist: "Neha Kakkar, Guru Randhawa", movie: "T-Series Mixtape Season 2", trackId: 1458312600 },
   { title: "Noor E Khuda", artist: "Adnan Sami, Shankar Mahadevan, Shreya Ghoshal", movie: "My Name Is Khan", trackId: 1569776327 },
   { title: "I'll Do the Talking Tonight", artist: "Neeraj Shridhar, Aditi Singh Sharma, Shefali Alvares", movie: "Agent Vinod", trackId: 1117420309 },
   { title: "Kyun Main Jaagoon", artist: "Shafqat Amanat Ali", movie: "Patiala House", trackId: 1122071039 },
@@ -751,97 +772,6 @@ window.BOLLYWOOD_SONGS = [
   { title: "Nayi Nayi", artist: "Shashwat Singh", movie: "99 Songs", trackId: 1503457398 },
   { title: "Murshid Khele Holi", artist: "Munawar Masoom, Javed Ali, Shankar Mahadevan", movie: "D-Day", trackId: 1115880193 },
   { title: "Toh Dishoom", artist: "Raftaar, Shahid Mallya, Mayur Puri", movie: "Dishoom", trackId: 1158846623 },
-  { title: "Chogada", artist: "Darshan Raval, Asees Kaur", movie: "Loveyatri - A Journey of Love", trackId: 1591012090 },
-  { title: "Mit Jaaye Gham (Dum Maaro Dum)", artist: "Anushka Manchanda", movie: "Dum Maaro Dum", trackId: 1122178115 },
-  { title: "Ikk Kudi", artist: "Shahid Mallya", movie: "Udta Punjab", trackId: 1529447365 },
-  { title: "Chakora", artist: "Mame Khan, Shuchismita Das, Akhtar Chinnal", movie: "Mirzya - Dare To Love", trackId: 1161313143 },
-  { title: "Meri Pyaari Ammi", artist: "Meghna Mishra", movie: "Secret Superstar", trackId: 1529521455 },
-  { title: "Ice Cream", artist: "Yo Yo Honey Singh, Palak Muchhal", movie: "The Xpose", trackId: 1111673460 },
-  { title: "Piya Aa", artist: "Sunidhi Chauhan", movie: "Haseena Parkar", trackId: 1280954731 },
-  { title: "Tees Maar Khan", artist: "Sonu Nigam", movie: "Tees Maar Khan", trackId: 1123140183 },
-  { title: "I Am In Love", artist: "Karthik", movie: "Once Upon a Time In Mumbaai", trackId: 1123340748 },
-  { title: "Rozaana", artist: "Salim Merchant", movie: "Love Breakups Zindagi", trackId: 1121759761 },
-  { title: "Wallah Re Wallah", artist: "Shekhar Ravjiani, Kamal Khan, Raja Hasan", movie: "Tees Maar Khan", trackId: 1123140185 },
-  { title: "Tera Reham", artist: "Shreya Ghoshal", movie: "Darr @the Mall", trackId: 816170865 },
-  { title: "Afghan Jalebi (Ya Baba)", artist: "Asrar, Akhtar Channal", movie: "Phantom", trackId: 1071880661 },
-  { title: "Naina Da Kya Kasoor", artist: "Amit Trivedi", movie: "Andhadhun", trackId: 1529564096 },
-  { title: "Heeriye", artist: "Deep Money, Neha Bhasin", movie: "Race 3", trackId: 1536984878 },
-  { title: "Jeena Marna", artist: "Altamash Faridi", movie: "Do Lafzon Ki Kahani", trackId: 1158801463 },
-  { title: "Aga Bai", artist: "Shalmali Kholgade, Monali Thakur", movie: "Aiyyaa", trackId: 1073353071 },
-  { title: "Bipasha", artist: "Shraddha Pandit, Shadab Faridi", movie: "Jodi Breakers", trackId: 1117363555 },
-  { title: "Nazar Sarsari", artist: "Darshan Raval", movie: "Petta (Hindi)", trackId: 1447476072 },
-  { title: "Kya Hai Mohabbat", artist: "A.R. Rahman", movie: "Ekk Deewana Tha", trackId: 492685700 },
-  { title: "Oye Oye", artist: "Aditi Singh Sharma, Armaan Malik", movie: "Azhar", trackId: 1157913791 },
-  { title: "Satyagraha", artist: "Rajiv Sundaresan, Shivam Pathak, Shweta Pandit", movie: "Satyagraha", trackId: 1115946071 },
-  { title: "Sunny Sunny", artist: "Yo Yo Honey Singh, Neha Kakkar", movie: "Yaariyan", trackId: 1116109818 },
-  { title: "Wajah Tum Ho", artist: "Armaan Malik", movie: "Hate Story 3", trackId: 1110838005 },
-  { title: "Ishq Sufiyana", artist: "Kamal Khan, Vishal, Shekhar", movie: "The Dirty Picture", trackId: 1121786584 },
-  { title: "Bezubaan Phir Se", artist: "Vishal Dadlani, Anushka Manchanda, Madhav Krishna", movie: "Abcd 2", trackId: 1529567807 },
-  { title: "Dil Mera Muft Ka", artist: "Nandini Srikar, Muazzam, Rizwan", movie: "Agent Vinod", trackId: 1117420326 },
-  { title: "Akela", artist: "Abhijeet Srivastava", movie: "India's Most Wanted", trackId: 1465147451 },
-  { title: "Ey Chhote Motor Chala", artist: "Dilshaad Shabbir Shaikh, Nikhita Gandhi, MC Heam", movie: "Beyond the Clouds", trackId: 1367133628 },
-  { title: "Maula", artist: "Javed Ali", movie: "Wazir", trackId: 1110848846 },
-  { title: "Issi Baat Pe", artist: "KK", movie: "I AM", trackId: 431094147 },
-  { title: "Rola Pe Gaya", artist: "Mahalakshmi Iyer, Hard Kaur, Shankar Mahadevan", movie: "Patiala House", trackId: 1122071040 },
-  { title: "Piya Tu Kaahe Rootha Re", artist: "Javed Bashir, Vishal, Shekhar", movie: "Kahaani", trackId: 1117379690 },
-  { title: "Sirf Tu", artist: "Armaan Malik", movie: "Pranaam", trackId: 1474955164 },
-  { title: "Hoshiyar Rehna", artist: "Neeraj Arya's Kabir Cafe", movie: "Baadshaho", trackId: 1273592306 },
-  { title: "Rehnuma", artist: "Shreya Ghoshal, Inder Bawra", movie: "Rocky Handsome", trackId: 1106994426 },
-  { title: "Ruby Ruby", artist: "Shashwat Singh, Poorvi Koutish", movie: "Sanju", trackId: 1405546222 },
-  { title: "Jingle Jingle", artist: "Farhid, Master Salim, Mohit Chauhan", movie: "Badmaash Company", trackId: 674008599 },
-  { title: "Saugandh Mujhe Iss Mitti Ki", artist: "Sukhwinder Singh, Shashi Suman", movie: "PM Narendra Modi", trackId: 1458106817 },
-  { title: "Haanikaarak Bapu", artist: "Sarwar Khan, Sartaz Khan Barna", movie: "Dangal", trackId: 1531116186 },
-  { title: "Zara Zara", artist: "Shaan", movie: "Guru Dakshina", trackId: 1529551807 },
-  { title: "Te Amo", artist: "Ash King, Sunidhi Chauhan", movie: "Dum Maaro Dum", trackId: 1122178119 },
-  { title: "Mumma Ki Parchai", artist: "Ronit Sarkar", movie: "Helicopter Eela", trackId: 1447900303 },
-  { title: "Rajj Rajj Ke", artist: "Sonakshi Sinha, Vishal Dadlani", movie: "Akira", trackId: 1159663709 },
-  { title: "Humnawaa", artist: "Armaan Malik, Shashaa Tirupati", movie: "99 Songs", trackId: 1503457401 },
-  { title: "Le Jaa Tu Mujhe", artist: "Atif Aslam", movie: "F.A.L.T.U", trackId: 442915277 },
-  { title: "Odhani", artist: "Darshan Raval, Neha Kakkar", movie: "Made in China", trackId: 1487448622 },
-  { title: "Dil Jaaniye", artist: "Tulsi Kumar, Jubin Nautiyal", movie: "Khandaani Shafakhana", trackId: 1474369299 },
-  { title: "Ishqe Di Lat", artist: "Tulsi Kumar", movie: "Junooniyat", trackId: 1158822799 },
-  { title: "Nachange Saari Raat", artist: "Meet Bros, Neeraj Shridhar, Tulsi Kumar", movie: "Junooniyat", trackId: 1158822797 },
-  { title: "Jaaneman Aah", artist: "Antara Mitra, Aaman Trikha, Mayur Puri", movie: "Dishoom", trackId: 1158846624 },
-  { title: "Walla Walla", artist: "Nakash Aziz, Neeti Mohan, Nayeem Shah", movie: "Pagalpanti", trackId: 1488782933 },
-  { title: "Dard Dilo Ke", artist: "Mohammed Irfan", movie: "The Xpose", trackId: 1111673461 },
-  { title: "Mauka", artist: "Mahalakshmi Iyer, Raman Mahadevan, Tarun Sagar", movie: "Aarakshan", trackId: 448304320 },
-  { title: "Salamat", artist: "Arijit Singh, Tulsi Kumar", movie: "Sarbjit", trackId: 1157930423 },
-  { title: "Character Dheela", artist: "Neeraj Shridhar, Amrita Kak", movie: "Ready", trackId: 1121154169 },
-  { title: "Hosanna", artist: "Leon D'souza, Suzanne D'Mello", movie: "Ekk Deewana Tha", trackId: 492685712 },
-  { title: "Sehra", artist: "Ankit Tiwari", movie: "Do Lafzon Ki Kahani", trackId: 1158801474 },
-  { title: "Katra Katra", artist: "Prakriti Kakar", movie: "Alone", trackId: 1074929861 },
-  { title: "Oh Girl You're Mine…….", artist: "Tarun Sagar, Alyssa Mendonsa, Loy Mendonsa", movie: "Housefull", trackId: 1130423391 },
-  { title: "Sapne Re", artist: "Meghna Mishra", movie: "Secret Superstar", trackId: 1529521456 },
-  { title: "Darmiyaan", artist: "Shafqat Amanat Ali, Clinton Cerejo", movie: "Jodi Breakers", trackId: 1117363556 },
-  { title: "Dost Hai (Girl I Loved You)", artist: "Naresh Iyer, Arya, Jaspreet Singh", movie: "Ekk Deewana Tha", trackId: 492685701 },
-  { title: "Aap Se Milkar", artist: "Abhijeet Srivastava, Aakanksha Sharma", movie: "Andhadhun", trackId: 1529564101 },
-  { title: "Selfish", artist: "Atif Aslam, Iulia Vantur", movie: "Race 3", trackId: 1536984882 },
-  { title: "Saware", artist: "Arijit Singh", movie: "Phantom", trackId: 1071880666 },
-  { title: "Pinacolada", artist: "Aditi Singh Sharma", movie: "Darr @the Mall", trackId: 816170866 },
-  { title: "Rab Rakha", artist: "Sonu Nigam, Shreya Ghoshal, Salim Merchant", movie: "Love Breakups Zindagi", trackId: 1121759783 },
-  { title: "Bharat Mata Ki Jai", artist: "Keerthi Sagathia, Vishal Dadlani, Vishal", movie: "Shanghai", trackId: 1117017642 },
-  { title: "Aiyo Ji", artist: "Salim Merchant, Shraddha Pandit", movie: "Satyagraha", trackId: 1115946078 },
-  { title: "Bhojhal Se", artist: "KK, Rajiiv Bhalla", movie: "I AM", trackId: 431094149 },
-  { title: "Mummy Nu Pasand", artist: "Sunanda Sharma", movie: "Jai Mummy Di", trackId: 1494896089 },
-  { title: "Kajra Kajra Kajraare", artist: "Sunidhi Chauhan", movie: "Kajraare", trackId: 1129415294 },
-  { title: "Khadke Glassy", artist: "Yo Yo Honey Singh, Ashok Mastie, Jyotica Tangri", movie: "Jabariya Jodi", trackId: 1529548158 },
-  { title: "Duaa", artist: "Nandini Srikar, Arijit Singh, Vishal", movie: "Shanghai", trackId: 1117017647 },
-  { title: "No Problem", artist: "Wajid Khan, Suzanne Dmello, Shabbir Ahmed", movie: "No Problem", trackId: 1848316955 },
-  { title: "Vande Mataram", artist: "Papon, Altamash Faridi", movie: "India's Most Wanted", trackId: 1465147707 },
-  { title: "Nach Le Nach Le", artist: "Sukhwinder Singh, Shreya Ghoshal", movie: "Bol Bachchan", trackId: 1117080727 },
-  { title: "Kahaani", artist: "KK, Vishal, Shekhar", movie: "Kahaani", trackId: 1117379691 },
-  { title: "Chaska", artist: "Krishna, Url", movie: "Badmaash Company", trackId: 674008603 },
-  { title: "Baaki Sab First Class Hai", artist: "Wajid", movie: "Jai Ho", trackId: 1116154108 },
-  { title: "Aaina", artist: "Arko, Tulsi Kumar, Neha Kakkar", movie: "The Body", trackId: 1491489345 },
-  { title: "Saiyaan Superstar", artist: "Tulsi Kumar", movie: "Ek Paheli Leela", trackId: 1073363863 },
-  { title: "Jai Hanumaan", artist: "Sukhwinder Singh", movie: "Pranaam", trackId: 1474955169 },
-  { title: "Namo Namo", artist: "Sandip Ssingh, Parry G", movie: "PM Narendra Modi", trackId: 1458106821 },
-  { title: "Sanedo", artist: "Mika Singh, Nikhita Gandhi, Benny Dayal", movie: "Made in China", trackId: 1487448623 },
-  { title: "Kudiya Shehar Diyan", artist: "Daler Mehndi, Neha Kakkar", movie: "Poster Boys", trackId: 1273534824 },
-  { title: "Dhaakad", artist: "Raftaar", movie: "Dangal", trackId: 1531116189 },
-  { title: "Thumka", artist: "Yo Yo Honey Singh", movie: "Pagalpanti", trackId: 1488782934 },
-  { title: "Shubh Din", artist: "Jyotica Tangri, Keerthi Sagathia", movie: "Parmanu", trackId: 1529529077 },
-  { title: "Sun Le Zara", artist: "Arijit Singh", movie: "Singham Returns", trackId: 1111767673 },
   { title: "Tujh Mein Rab Dikhta Hai", artist: "Roop Kumar Rathod", movie: "Rab Ne Bana Di Jodi", trackId: 673596462 },
   { title: "Wake Up Sid!", artist: "Shankar Mahadevan, Loy Mendonsa", movie: "Wake Up Sid", trackId: 327458452 },
   { title: "Ghanan Ghanan", artist: "Alka Yagnik, Sehar, Shaan", movie: "Lagaan", trackId: 305751199 },
@@ -912,12 +842,14 @@ window.BOLLYWOOD_SONGS = [
   { title: "Mauja Hi Mauja", artist: "Mika Singh", movie: "Jab We Met", trackId: 1134725346 },
   { title: "Aai Paapi", artist: "Neeraj Shridhar, Pritam", movie: "Kismat Konnection", trackId: 1537027343 },
   { title: "Bole Chudiyan", artist: "Amit Kumar, Jatin-Lalit, Sonu Nigam", movie: "Kabhi Khushi Kabhie Gham", trackId: 300388195 },
+  { title: "Dua", artist: "Sukhwinder Singh, Kailash Kher, Marianne D'cruz Aiman", movie: "Kurbaan", trackId: 333294983 },
   { title: "Lut Jaaon Lut Jaaon", artist: "Harshdeep", movie: "Karzzzz", trackId: 1116479860 },
   { title: "Aaj Kal Zindagi", artist: "Shankar Mahadevan", movie: "Wake Up Sid", trackId: 327458456 },
   { title: "Insha Allah", artist: "Akruti Kakkar, Krishna, Shaan", movie: "Welcome", trackId: 270071021 },
   { title: "Crazy Kiya Re", artist: "Sunidhi Chauhan", movie: "Dhoom:2", trackId: 673572927 },
   { title: "Taare Zameen Par", artist: "Shankar Mahadevan, Dominique, Vivieanne Pocha", movie: "Taare Zameen Par", trackId: 1116468169 },
   { title: "Ek Hockey Doongi Rakh Ke", artist: "Chak De Hockey Team, KK, Shah Rukh Khan", movie: "Chak De India", trackId: 673547588 },
+  { title: "Main Hoon Na", artist: "Sonu Nigam, Shreya Ghoshal", movie: "Main Hoon Na", trackId: 1120934442 },
   { title: "Dil Ko Aaya Sukoon", artist: "Rahat Fateh Ali Khan, Hiral Brahmbhatt", movie: "Rangrezz", trackId: 605714139 },
   { title: "Aaja Nachle", artist: "Sunidhi Chauhan", movie: "Aaja Nachle", trackId: 668941168 },
   { title: "Chilman Uthegi Nahin", artist: "Alka Yagnik, Kailash Kher, Ayesha Darbar", movie: "Kisna", trackId: 1536603139 },
@@ -936,6 +868,7 @@ window.BOLLYWOOD_SONGS = [
   { title: "Fashion Ka Jalwa", artist: "Sukhwinder Singh, Satya Hinduja, Robert 'Bob' Omulo", movie: "Fashion", trackId: 1133247334 },
   { title: "Just Chill", artist: "Sonu Nigam, Jayesh Gandhi, Amrita Kak", movie: "Maine Pyaar Kyun Kiya", trackId: 1138107252 },
   { title: "Woh Ladki Hai Kahan", artist: "Shaan, Kavita Subrahmanyam", movie: "Dil Chahta Hai", trackId: 1138970388 },
+  { title: "Kitni Baatein", artist: "Sadhana Sargam, Hariharan", movie: "Lakshya", trackId: 469263366 },
   { title: "Beete Lamhein", artist: "KK", movie: "The Train", trackId: 1136653629 },
   { title: "Dil Keh Reha Ha", artist: "Kunal Ganjawala", movie: "Kyon Ki - It's Fate", trackId: 1135937550 },
   { title: "Hari Om Hari Om", artist: "Himesh Reshammiya", movie: "Karzzzz", trackId: 1116479861 },
@@ -971,6 +904,72 @@ window.BOLLYWOOD_SONGS = [
   { title: "Mitwa", artist: "Caralisa Monteiro, Shafqat Amanat Ali, Shankar Mahadevan", movie: "Kabhi Alvida Naa Kehna", trackId: 305752291 },
   { title: "Nach Baliye", artist: "Loy Mendonsa, Shankar Mahadevan, Sowmya Raoh", movie: "Bunty Aur Babli", trackId: 673539806 },
   { title: "Ishq Samundar", artist: "Sunidhi Chauhan, Anand Raj Anand", movie: "Kaante", trackId: 1139112186 },
+  { title: "Mar Jawaan", artist: "Shruti Pathak, Salim Merchant", movie: "Fashion", trackId: 1133247335 },
+  { title: "Duniya", artist: "Amit Trivedi", movie: "Dev D", trackId: 1131620273 },
+  { title: "Shikdum", artist: "Shaan, Shreya Ghoshal", movie: "Dhoom", trackId: 673571403 },
+  { title: "Ye Ishq Hai", artist: "Shreya Ghoshal", movie: "Jab We Met", trackId: 1134725348 },
+  { title: "Dil Ke Badle Sanam", artist: "Udit Narayan, Alka Yagnik", movie: "Kyon Ki - It's Fate", trackId: 1135937552 },
+  { title: "Aisa Deewana", artist: "Sonu Nigam, Alka Yagnik", movie: "Dil Maange More", trackId: 1139437630 },
+  { title: "Dil Kya Kare", artist: "Adnan Sami", movie: "Salaam-E-Ishq", trackId: 1134568342 },
+  { title: "Dekhoon Tujhe To Pyaar Aaye", artist: "Akriti Kakkar", movie: "Apne", trackId: 1136792563 },
+  { title: "Tandoori Nights", artist: "Sunidhi Chauhan", movie: "Karzzzz", trackId: 1116479862 },
+  { title: "Humko Deewana Kar Gaye", artist: "Sonu Nigam, Tulsi Kumar", movie: "Humko Deewana Kar Gaye", trackId: 1136042542 },
+  { title: "Tauba Tauba", artist: "Sonu Nigam, Kunal Ganjawala, Sunidhi Chauhan", movie: "Kaal", trackId: 300222955 },
+  { title: "Deewanapan Deewangi", artist: "Udit Narayan, Alka Yagnik", movie: "Main Aisa Hi Hoon", trackId: 1138164625 },
+  { title: "Aamin", artist: "Himesh Reshammiya", movie: "Red the Dark Side", trackId: 1136545489 },
+  { title: "My Name Is Ali", artist: "Bipasha Basu, Sonu Nigam", movie: "Dhoom:2", trackId: 673572931 },
+  { title: "Bakhuda Tumhi Ho", artist: "Atif Aslam, Alka Yagnik, Pritam", movie: "Kismat Konnection", trackId: 1537027347 },
+  { title: "Kahe Ujadi Mori Neend", artist: "Rashid Khan", movie: "Kisna", trackId: 1536603143 },
+  { title: "Shambho Shiv Shambho", artist: "Sukhwinder Singh", movie: "Rangrezz", trackId: 605714141 },
+  { title: "Bum Bum Bole", artist: "Shaan, Aamir Khan", movie: "Taare Zameen Par", trackId: 1116468177 },
+  { title: "Show Me Your Jalwa", artist: "Richa Sharma, Kailash Kher, Salim Merchant", movie: "Aaja Nachle", trackId: 668941192 },
+  { title: "Do Pal", artist: "Lata Mangeshkar, Sonu Nigam", movie: "Veer-Zaara", trackId: 673583190 },
+  { title: "Aye Chand Teri", artist: "Sonu Nigam, Alka Yagnik", movie: "Tera Jadoo Chal Gayaa", trackId: 1540261586 },
+  { title: "Hey Shona", artist: "Vishal, Shekhar, Shaan", movie: "Ta Ra Rum Pum", trackId: 673591115 },
+  { title: "Aaj Ki Raat", artist: "Alisha Chinai, Mahalakshmi Iyer, Sonu Nigam", movie: "Don", trackId: 1275639470 },
+  { title: "JBJ", artist: "Mahalakshmi Iyer, Rahat Fateh Ali Khan, Shankar Mahadevan", movie: "Jhoom Barabar Jhoom", trackId: 673580001 },
+  { title: "Whats Goin' On", artist: "Vishal, Shekhar, Kunal Ganjawala", movie: "Salaam Namaste", trackId: 673686213 },
+  { title: "Mehndi Hai Rachnewali", artist: "Alka Yagnik", movie: "Zubeidaa", trackId: 302388554 },
+  { title: "Dekho Na", artist: "Sonu Nigam, Sunidhi Chauhan", movie: "Fanaa", trackId: 673576195 },
+  { title: "Dil Haara", artist: "Vishal, Shekhar, Sukhwinder Singh", movie: "Tashan", trackId: 673588780 },
+  { title: "Where's the Party Tonight", artist: "Loy Mendonsa, Shaan, Shankar Mahadevan", movie: "Kabhi Alvida Naa Kehna", trackId: 305752292 },
+  { title: "I'm In Love", artist: "Sonu Nigam, Mahalakshmi Iyer, Clinton Cerejo", movie: "Neal ‘n’ Nikki", trackId: 1099437763 },
+  { title: "Bolo Bolo", artist: "Shaan", movie: "Rehnaa Hai Terre Dil Mein", trackId: 1340760564 },
+  { title: "Ishq Kabhi Kariyo Na", artist: "Sunidhi Chauhan", movie: "Musafir", trackId: 1139398573 },
+  { title: "Sajan Tumse Pyar", artist: "Udit Narayan, Alka Yagnik", movie: "Maine Pyaar Kyun Kiya", trackId: 1138107257 },
+  { title: "Nazaara Hai", artist: "Vishal Dadlani", movie: "8 X 10 Tasveer", trackId: 1131733249 },
+  { title: "Kuchh Khaas", artist: "Mohit Chauhan, Neha Bhasin", movie: "Fashion", trackId: 1133247336 },
+  { title: "Rama Re", artist: "Sanjay Dutt, Shaan, Zubeen Garg", movie: "Kaante", trackId: 1139112187 },
+  { title: "Aankh Micholi", artist: "Amit Trivedi", movie: "Dev D", trackId: 1131620274 },
+  { title: "Chand Chhupa Badal Mein", artist: "Udit Narayan, Alka Yagnik", movie: "Hum Dil De Chuke Sanam", trackId: 1120781021 },
+  { title: "Nimbooda", artist: "Kavita Krishnamurthy, Karsan Sargathia", movie: "Hum Dil De Chuke Sanam", trackId: 1120781022 },
+  { title: "Deewana Main Chala", artist: "Udit Narayan", movie: "Pyaar Kiya To Darna Kya", trackId: 1140246742 },
+  { title: "Rukmani Rukmani", artist: "Baba Sehgal, Shweta Shetty", movie: "Roja", trackId: 587001060 },
+  { title: "Chhod Aaye Hum", artist: "Vishal Bhardwaj, Hariharan, KK", movie: "Maachis", trackId: 1103767068 },
+  { title: "Aankhon Ki Gustakhiyan", artist: "Kumar Sanu, Kavita Krishnamurthy", movie: "Hum Dil De Chuke Sanam", trackId: 1120781026 },
+  { title: "O Sathiya O Beliya", artist: "Anuradha Paudwal", movie: "Pyaar Kiya To Darna Kya", trackId: 1140246744 },
+  { title: "Dil Ne Kar Liya", artist: "Udit Narayan, Alka Yagnik", movie: "Humraaz", trackId: 1130294773 },
+  { title: "Jiya Jale", artist: "Lata Mangeshkar, M. G. Sreekumar", movie: "Dil Se", trackId: 1130322192 },
+  { title: "Yeh Haseen Vadiyan Yeh Khula Aasman", artist: "S.P. Balasubrahmanyam, K.S. Chithra", movie: "Roja", trackId: 587001062 },
+  { title: "Chhad Zid Karna", artist: "Udit Narayan, Anuradha Paudwal", movie: "Pyaar Kiya To Darna Kya", trackId: 1140246745 },
+  { title: "Musu Musu", artist: "Vishal Dadlani, Shiraz, Samrat", movie: "Pyaar Mein Kabhi Kabhi", trackId: 294532483 },
+  { title: "Dil Se Re", artist: "Anuradha, Anupama", movie: "Dil Se", trackId: 1130322222 },
+  { title: "Kahin Pyaar Na Ho Jaaye", artist: "Alka Yagnik, Kumar Sanu", movie: "Kahin Pyaar Na Ho Jaaye", trackId: 1128772020 },
+  { title: "Bharat Humko Jaan Se Pyara Hai", artist: "Hariharan", movie: "Roja", trackId: 587001066 },
+  { title: "Pyaar Kar", artist: "Udit Narayan, Shaan, Kavita Krishnamurthy", movie: "Humraaz", trackId: 1130295062 },
+  { title: "Lakhon Diwane", artist: "Vishal Dadlani, Shiraz, KK", movie: "Pyaar Mein Kabhi Kabhi", trackId: 294532484 },
+  { title: "Kehna Hi Kya", artist: "K.S. Chithra", movie: "Bombay", trackId: 1442934813 },
+  { title: "Savariya", artist: "Kamal Khan, Alka Yagnik", movie: "Kahin Pyaar Na Ho Jaaye", trackId: 1128772392 },
+  { title: "Beat Of Passion", artist: "A.R. Rahman", movie: "Taal", trackId: 1536519639 },
+  { title: "Bardaasht", artist: "KK, Sunidhi Chauhan", movie: "Humraaz", trackId: 1130295069 },
+  { title: "Dil Se Mere", artist: "Shekhar Ravjiani, Mahalakshmi Iyer", movie: "Pyaar Mein Kabhi Kabhi", trackId: 294532485 },
+  { title: "Dhoka Dhoka", artist: "Bappi Lahiri, Sunidhi Chauhan, Mamta Sharma", movie: "Himmatwala", trackId: 1328977912 },
+  { title: "Ek Ho Gaye Hum Aur Tum", artist: "Remo Fernandes", movie: "Bombay", trackId: 1442934820 },
+  { title: "Hai Rama", artist: "Hariharan, Swarnalatha", movie: "Rangeela", trackId: 1550793662 },
+  { title: "Hameshaa Hameshaa", artist: "Kumar Sanu, Sadhana Sargam", movie: "Hameshaa", trackId: 1128821211 },
+  { title: "Dhin Tara", artist: "Kumar Sanu", movie: "Kahin Pyaar Na Ho Jaaye", trackId: 1128772411 },
+  { title: "Ishq Bina", artist: "Anuradha Sriram, Sujatha, Sonu Nigam", movie: "Taal", trackId: 1536519640 },
+  { title: "Aap Ki Khatir", artist: "Himesh Reshammiya", movie: "Aap Ki Khatir", trackId: 1124338014 },
   { title: "Husn", artist: "Anuv Jain", movie: "", trackId: 1717140552 },
   { title: "Jo Tum Mere Ho", artist: "Anuv Jain", movie: "", trackId: 1758669726 },
   { title: "Alag Aasmaan", artist: "Anuv Jain", movie: "", trackId: 1710154601 },
@@ -1002,7 +1001,7 @@ window.BOLLYWOOD_SONGS = [
   { title: "Na Ja Tu", artist: "King", movie: "", trackId: 1649039963 },
   { title: "Ektarfa", artist: "King", movie: "", trackId: 1624487807 },
   { title: "Tum Saath Rehnaa", artist: "King", movie: "", trackId: 1491346036 },
-  { title: "Pablo", artist: "King", movie: "", trackId: 1649039985 },
+  { title: "Ilzaam (From the Album 'Industry')", artist: "Arjun Kanungo, King", movie: "", trackId: 1613924685 },
   { title: "Chalo Chalein", artist: "Ritviz", movie: "", trackId: 1550339545 },
   { title: "Raat Ki Rani", artist: "Seedhe Maut", movie: "", trackId: 1762198511 },
   { title: "Khatta Flow", artist: "Seedhe Maut, KR$NA", movie: "", trackId: 1703241345 },
@@ -1036,8 +1035,10 @@ window.BOLLYWOOD_SONGS = [
   { title: "City Slums", artist: "Raja Kumari", movie: "", trackId: 1292155382 },
   { title: "Swag Mera Desi", artist: "Raftaar, Manj Musik", movie: "", trackId: 951006393 },
   { title: "All Black", artist: "Raftaar, Sukh-E Muzical Doctorz", movie: "", trackId: 1159600837 },
+  { title: "We Doin' It Big", artist: "RDB", movie: "", trackId: 574786351 },
   { title: "Ghana Kasoota", artist: "Raftaar, Rashmeet Kaur", movie: "", trackId: 1592956489 },
   { title: "Stand Up - Spoken Word", artist: "B.I.G Dhillon, Raftaar, Manj Musik", movie: "", trackId: 985958524 },
+  { title: "Bbm", artist: "Nindy Kaur", movie: "", trackId: 593508285 },
   { title: "Gal Mitro", artist: "Nindy Kaur", movie: "", trackId: 643049582 },
   { title: "Ladki Ki Party", artist: "Nambardar", movie: "", trackId: 711443870 },
   { title: "At Peace", artist: "Karan Aujla, Ikky", movie: "", trackId: 1819981707 },
@@ -1045,6 +1046,14 @@ window.BOLLYWOOD_SONGS = [
   { title: "Softly", artist: "Karan Aujla, Ikky", movie: "", trackId: 1697533818 },
   { title: "Admirin' You", artist: "Karan Aujla, Ikky", movie: "", trackId: 1697533664 },
   { title: "God Damn", artist: "Badshah, Karan Aujla, Hiten", movie: "", trackId: 1736449719 },
+  { title: "WOH", artist: "Ikka, Dino James, Badshah", movie: "", trackId: 1656665787 },
+  { title: "Chosen", artist: "Dino James", movie: "", trackId: 1619084173 },
+  { title: "Dooriyan", artist: "Dino James", movie: "", trackId: 1494684334 },
+  { title: "Wishlist", artist: "Dino James", movie: "", trackId: 1503298665 },
+  { title: "Lost", artist: "Dino James", movie: "", trackId: 1611951921 },
+  { title: "Pyaar Pyaar", artist: "Dino James", movie: "", trackId: 1623586157 },
+  { title: "Sound De", artist: "Dino James", movie: "", trackId: 1576874132 },
+  { title: "Unstoppable", artist: "Dino James", movie: "", trackId: 1786359827 },
   { title: "Ishq Nachaawe", artist: "Karan Kanchan, Rashmeet Kaur, Yashraj", movie: "", trackId: 1766715747 },
   { title: "Bindaas", artist: "Maharya", movie: "", trackId: 1804700340 },
   { title: "Khasara", artist: "Abdul Hannan, Samar Jafri", movie: "", trackId: 1883097849 },
@@ -1069,10 +1078,16 @@ window.BOLLYWOOD_SONGS = [
   { title: "Sushi Song", artist: "When Chai Met Toast", movie: "", trackId: 1676959088 },
   { title: "'Hop Stomp'", artist: "When Chai Met Toast", movie: "", trackId: 1450782337 },
   { title: "Believe", artist: "When Chai Met Toast", movie: "", trackId: 1435284942 },
+  { title: "Tu Aisa Kaise Hai?", artist: "Osho Jain", movie: "", trackId: 1537745947 },
+  { title: "Dekha Hi Nahi", artist: "Osho Jain", movie: "", trackId: 1770529491 },
+  { title: "Humara Ho Gaya", artist: "Osho Jain", movie: "", trackId: 1589030873 },
+  { title: "Khush to Hai Na", artist: "Osho Jain", movie: "", trackId: 1471915126 },
+  { title: "Mushkil Hai", artist: "Osho Jain", movie: "", trackId: 1523735256 },
+  { title: "Kya Pata", artist: "Osho Jain", movie: "", trackId: 1515233349 },
+  { title: "Tujhse Badhkar Nahi Hai", artist: "Osho Jain", movie: "", trackId: 1509483768 },
   { title: "Lamhe", artist: "Raghav Chaitanya", movie: "", trackId: 1505952774 },
   { title: "Baatein", artist: "Raghav Chaitanya", movie: "", trackId: 1496894357 },
   { title: "Tere Bin", artist: "Raghav Chaitanya", movie: "", trackId: 1600299028 },
-  { title: "Dooriyan", artist: "Raghav Chaitanya, Anurag Saikia", movie: "", trackId: 1555655056 },
   { title: "Jaane De", artist: "The Rish, Raghav Chaitanya", movie: "", trackId: 1635514298 },
   { title: "Parwaah", artist: "Raghav Chaitanya", movie: "", trackId: 1534115879 },
   { title: "Gustakhiyaan", artist: "Raghav Chaitanya, Ritrisha Sarmah", movie: "", trackId: 1510343181 },
@@ -1136,6 +1151,7 @@ window.BOLLYWOOD_SONGS = [
   { title: "Zindagi Bata De", artist: "Tony Kakkar", movie: "", trackId: 1630172519 },
   { title: "Bijli Ki Taar", artist: "Tony Kakkar", movie: "", trackId: 1479992748 },
   { title: "12 Ladke", artist: "Tony Kakkar, Neha Kakkar", movie: "", trackId: 1652687023 },
+  { title: "Naash", artist: "Anirban Chakraborty, Orange Street, Imran Khan", movie: "", trackId: 718911321 },
   { title: "Bahara", artist: "Vishal, Shekhar, Shreya Ghoshal", movie: "", trackId: 1754308069 },
   { title: "Chehra Hay", artist: "Imran Khan", movie: "", trackId: 1577336501 },
   { title: "Gulaab Tere", artist: "Imran Khan, Rox A", movie: "", trackId: 1842077737 },
@@ -1147,19 +1163,17 @@ window.BOLLYWOOD_SONGS = [
   { title: "Rabba Sacheya", artist: "Atif Aslam", movie: "", trackId: 622942765 },
   { title: "Younhi", artist: "Atif Aslam", movie: "", trackId: 1214582097 },
   { title: "Meri Kahani", artist: "Atif Aslam", movie: "", trackId: 1550888236 },
+  { title: "Garmi (From \"Street Dancer 3D\")", artist: "Badshah, Neha Kakkar", movie: "", trackId: 1492700054 },
   { title: "Gal Ban Gayi", artist: "Meet Bros, Sukhbir, Neha Kakkar", movie: "", trackId: 1167654195 },
   { title: "Yaad Piya Ki Aane Lagi", artist: "Neha Kakkar", movie: "", trackId: 1488080714 },
   { title: "Nikle Currant", artist: "Jassie Gill, Neha Kakkar", movie: "", trackId: 1438403347 },
   { title: "Taaron Ke Shehar", artist: "Neha Kakkar, Jubin Nautiyal", movie: "", trackId: 1532379497 },
   { title: "Makhna", artist: "Yo Yo Honey Singh, Neha Kakkar, Singhsta", movie: "", trackId: 1447603196 },
-  { title: "Kabira-Naina", artist: "Neha Kakkar, Mohd. Irfan", movie: "", trackId: 1270555663 },
-  { title: "High Rated Gabru-Ban Ja Rani", artist: "Neha Kakkar, Guru Randhawa", movie: "", trackId: 1341694971 },
+  { title: "Dus Bahane 2.0 (From \"Baaghi 3\")", artist: "Vishal, Shekhar", movie: "", trackId: 1498610719 },
   { title: "Main Jis Din Bhulaa Du", artist: "Rochak Kohli, Jubin Nautiyal, Tulsi Kumar", movie: "", trackId: 1552871829 },
   { title: "Raat Kamaal Hai", artist: "Guru Randhawa, Tulsi Kumar", movie: "", trackId: 1377017918 },
-  { title: "Tose Naina-Tum Jo Aaye", artist: "Armaan Malik, Tulsi Kumar", movie: "", trackId: 1270555665 },
   { title: "Mere Papa", artist: "Tulsi Kumar, Jeet Gannguli", movie: "", trackId: 1189160266 },
-  { title: "Mera Highway Star", artist: "Tulsi Kumar, Raftaar, Sanjay Rajee", movie: "", trackId: 1225527683 },
-  { title: "Ik Yaad Purani", artist: "Tulsi Kumar, Jashan Singh, Shaarib", movie: "", trackId: 1302002300 },
+  { title: "Nachange Saari Raat (From \"Junooniyat\")", artist: "Meet Bros", movie: "", trackId: 1191148869 },
   { title: "Saanware", artist: "Akhil Sachdeva", movie: "", trackId: 1729917295 },
   { title: "O Sanam", artist: "Akhil Sachdeva", movie: "", trackId: 1795603975 },
   { title: "O Jaanwaale", artist: "Akhil Sachdeva", movie: "", trackId: 1511131497 },
@@ -1167,7 +1181,6 @@ window.BOLLYWOOD_SONGS = [
   { title: "Gal Sun", artist: "Akhil Sachdeva", movie: "", trackId: 1380728308 },
   { title: "Papa", artist: "Akhil Sachdeva", movie: "", trackId: 1281247689 },
   { title: "Dil Taan Pagal-Je Tu Na", artist: "Akhil Sachdeva, Amber Vashisht", movie: "", trackId: 1341694979 },
-  { title: "Aaoge Jab Tum-Jag Soona Soona", artist: "Nandini Srikar, Akhil Sachdeva", movie: "", trackId: 1470816397 },
   { title: "Baller", artist: "Shubh, Ikky", movie: "", trackId: 1641674741 },
   { title: "For A Reason", artist: "Karan Aujla, Ikky", movie: "", trackId: 1829591983 },
   { title: "Boyfriend", artist: "Karan Aujla, Ikky", movie: "", trackId: 1829591986 },
@@ -1176,6 +1189,7 @@ window.BOLLYWOOD_SONGS = [
   { title: "Dil Jo Bhi Kahey", artist: "Shaan, Dominique Cerejo", movie: "", trackId: 1542195022 },
   { title: "Dhoom Reloaded", artist: "Aditi Singh Sharma, Vishal Dadlani, Dominique Cerejo", movie: "", trackId: 1069608556 },
   { title: "Power of Love", artist: "Clinton Cerejo, Dominique Cerejo", movie: "", trackId: 1034208626 },
+  { title: "I'm In Love From \"Neal ‘n’ Nikki\")", artist: "Clinton Cerejo, Dominique Cerejo, Mahalakshmi Iyer", movie: "", trackId: 672646329 },
   { title: "Love in September", artist: "Dominique Cerejo", movie: "", trackId: 1808783758 },
   { title: "I Be Here", artist: "Dominique Cerejo", movie: "", trackId: 622353743 },
   { title: "Disco Rap", artist: "Dominique Cerejo", movie: "", trackId: 1540756549 },
@@ -1785,13 +1799,7 @@ button:disabled { cursor: not-allowed; }
   border-radius: var(--radius);
   color: var(--paper);
   font-family: inherit;
-  /* 16px is a hard floor, not a taste decision. iOS Safari zooms the page in on
-     any focused input smaller than this, and since the viewport meta carries no
-     maximum-scale - deliberately, because that would disable pinch-zoom for
-     everyone - nothing zooms back out afterwards. The player was left stranded
-     at 1.3x for the rest of the round. 15px cost exactly one pixel of elegance
-     and the entire phone experience. */
-  font-size: 16px;
+  font-size: 15px;
   padding: 14px var(--step-3);
   transition: border-color 140ms ease, background 140ms ease;
 }
@@ -3177,26 +3185,22 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
     return idx.slice(0, ROOM_CANDIDATES).map(function (n) { return catalog[n]; });
   }
 
-  // Codes are generated, never typed, and deliberately not words.
-  //
-  // They were words to begin with - two Hindi nouns, "garam saathi" - and that
-  // was the mistake. A pair of real words reads as a phrase that is trying to
-  // mean something, and since the pairing is random it never does. An opaque
-  // code asks to be read as a label and nothing more.
-  //
-  // The alphabet has no vowels, so a code cannot accidentally spell a word in
-  // any language, which is the cheapest possible defence against generating
-  // something unfortunate. It also drops 0/o/1/l/i, the characters that make a
-  // code ambiguous when it is read off someone else's screen.
-  var CODE_ALPHABET = "23456789bcdfghjkmnpqrstvwxz";
-  var CODE_LENGTH = 6;
+  // Room names are generated, never typed. Two words from one list, guaranteed
+  // different without a retry loop - a retry would spin forever under a stubbed
+  // Math.random, which is exactly what the test harness has.
+  var ROOM_WORDS = [
+    "chai", "dhoom", "masti", "jugnu", "raita", "bindi", "dosti", "ishq",
+    "jalebi", "kismat", "lehar", "mehfil", "nazar", "pakora", "rangoli", "saathi",
+    "tabla", "udaan", "zara", "aankh", "badal", "chand", "dilbar", "garam",
+    "hawa", "jaadu", "kabir", "laddu", "mirch", "nawab", "paan", "rasta",
+    "sitara", "thali", "veena", "gulab", "kulfi", "morni", "peepal", "sarod",
+  ];
 
   function newRoomCode() {
-    var out = "";
-    for (var i = 0; i < CODE_LENGTH; i++) {
-      out += CODE_ALPHABET.charAt(Math.floor(Math.random() * CODE_ALPHABET.length));
-    }
-    return out;
+    var n = ROOM_WORDS.length;
+    var a = Math.floor(Math.random() * n) % n;
+    var b = (a + 1 + Math.floor(Math.random() * (n - 1))) % n;
+    return ROOM_WORDS[a] + "-" + ROOM_WORDS[b];
   }
 
   var ROOM_CODE_OK = /^[a-z0-9][a-z0-9-]{1,31}$/;
@@ -3313,16 +3317,6 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
   // Clipboard access is a permission and a promise, and it is absent outright on
   // http:// origins and inside some sandboxes, so the caller gets told which of
   // the two happened rather than the button silently doing nothing.
-  // A round change swaps the whole screen underneath a scroll position that was
-  // set by the previous one. The reveal is the tall screen - artwork, full
-  // player, six guess rows - so "Next song" was leaving the player parked at the
-  // bottom of a short new round, looking at nothing, having to scroll up every
-  // single time. Instant rather than smooth: this is a screen change, not a
-  // journey, and a 300ms glide on every round gets old by the third one.
-  function scrollToTop() {
-    try { window.scrollTo(0, 0); } catch (e) { /* nothing to scroll */ }
-  }
-
   function copyText(s) {
     try {
       if (window.navigator && window.navigator.clipboard && window.navigator.clipboard.writeText) {
@@ -3485,7 +3479,6 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
         setPos(0);
         setAudioErr("");
         setPhase("play");
-        scrollToTop();
         setPlayed(fresh.length ? seen.concat([next.uid]) : [next.uid]);
 
         // The previous round may have been mid-playback - the reveal screen's
@@ -3537,7 +3530,6 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
       setAudioErr("");
       setBusy(false);
       setPhase("play");
-      scrollToTop();
 
       trackFor(next).then(function (t) {
         if (token !== roundRef.current) return;
@@ -3599,7 +3591,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
         // Reopening a finished link shows what you got. Rolling it again would
         // defeat the point: the result is only worth comparing if everybody had
         // one attempt at the same six songs.
-        if (r.results.length >= ROOM_ROUNDS) { setPhase("summary"); scrollToTop(); }
+        if (r.results.length >= ROOM_ROUNDS) setPhase("summary");
         else startRoomRound(r, r.index);
       });
     }, [startRoomRound]);
@@ -3699,7 +3691,6 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
       player().stop();
       leaveRoom();
       setPhase("start");
-      scrollToTop();
       setSong(null);
       setTrack(null);
       setReady(false);
@@ -3796,16 +3787,9 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
           // Silent on the summary, where the screen's own heading already names
           // the room in type twice this size. Saying it in both places just
           // makes the reader check whether they are two different things.
-          // Three short lines rather than one long one: the masthead's other
-          // column is wide tracked monospace too, and a single "nazar-sitara ·
-          // round 3 of 6 · 11 pts" is what pushes the pair off a narrow phone.
-          //
-          // The total counts finished rounds only, so it is what you have
-          // banked, not what you might still get. It moves when a round ends.
           room && phase !== "summary"
             ? h("div", { className: "scoreline" },
-                room.code, h("br"),
-                h("b", null, roomPoints(room.results)), " / " + ROOM_MAX_POINTS, h("br"),
+                h("b", null, room.code), h("br"),
                 "round " + Math.min(room.results.length + 1, ROOM_ROUNDS) + " of " + ROOM_ROUNDS)
             : null,
           // No longer "this session" - it outlives the tab now.
@@ -4019,7 +4003,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
             onClick: function () {
               if (!room) return startRound(played);
               var done = room.results.length;
-              if (done >= ROOM_ROUNDS) { player().stop(); setBusy(false); setPhase("summary"); scrollToTop(); }
+              if (done >= ROOM_ROUNDS) { player().stop(); setBusy(false); setPhase("summary"); }
               else startRoomRound(Object.assign({}, room, { index: done }), done);
             }
           }, room
