@@ -30,3 +30,6 @@ mobile-*.html
 # raw iTunes responses cached by build/harvest.js so a re-run to change only
 # the selection rules costs nothing. Derived data; regenerate, never commit.
 build/.harvest-cache/
+
+# Throwaway instrumented copies used for screenshots
+probe.html
