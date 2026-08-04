@@ -1386,14 +1386,9 @@ body {
 .btn-shareline:hover { background: var(--marigold); color: var(--ink); }
 .btn-shareline:active { transform: translateY(1px); }
 .btn-shareline:focus-visible { outline: 2px solid var(--paper); outline-offset: 2px; }
-/* The mid-round version is an invitation, not an action the player came for, so
-   it gives up the border and reads as a line of text until you look at it. */
-.btn-shareline-quiet {
-  border-color: transparent;
-  color: var(--muted-2);
-  padding: 10px;
-}
-.btn-shareline-quiet:hover { background: none; color: var(--marigold); }
+/* Roomy on the start screen, where it is one of three things you can do and the
+   other two are full-size buttons. */
+.roombox .btn-shareline { padding: 14px 24px; width: auto; min-width: 200px; }
 .roombox {
   margin-top: var(--step-2);
   padding-top: var(--step-2);
@@ -3748,6 +3743,24 @@ html, body { overflow-x: hidden; }
               "who opens it plays the same six, in the same order.")
           ),
 
+          // The third thing you can do from here, given the same weight as the
+          // second. Someone who has landed on the start screen and not yet
+          // pressed anything is as likely to want to pass it on as to play.
+          h("div", { className: "roombox" },
+            h("button", {
+              className: "btn-shareline",
+              onClick: function () {
+                shareGame().then(function (r) {
+                  if (r === "copied" || r === "failed") setCopied(r);
+                });
+              }
+            }, copied === "copied" ? "Link copied"
+               : copied === "failed" ? "Copy failed — the link is in the address bar"
+               : "Share Filmi"),
+            h("p", { className: "roombox-note" },
+              "Sends the game, not a room — they start wherever they like.")
+          ),
+
           roomErr ? h("div", { className: "notice bad" }, roomErr) : null,
           h("div", { className: "loading-label" }, SONGS.length + " songs in the catalog"),
           score.total > 0
@@ -4006,8 +4019,12 @@ html, body { overflow-x: hidden; }
       // guess history rather than above it: mid-round the player is trying to
       // name a song, and a call to action competing with the guess box would be
       // working against the thing it is advertising.
+      // Was a borderless line of muted text, on the theory that a call to action
+      // should not compete with the round being played. It competed with nothing
+      // because it could not be seen at all - which is not restraint, it is a
+      // button that does not work. Same outline as everywhere else now.
       !room ? h("button", {
-        className: "btn-shareline btn-shareline-quiet",
+        className: "btn-shareline",
         onClick: function () {
           shareGame().then(function (r) { if (r === "copied" || r === "failed") setCopied(r); });
         }
