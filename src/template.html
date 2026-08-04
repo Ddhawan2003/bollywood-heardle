@@ -1365,6 +1365,35 @@ body {
 .roombar-share:hover { background: #FFBE55; }
 .roombar-share:active { transform: translateY(1px); }
 .roombar-share:focus-visible { outline: 2px solid var(--paper); outline-offset: 2px; }
+
+/* Sits directly under the primary action and must not compete with it: the
+   marigold fill is spent on Next song, so this is an outline of the same shape
+   and weight. Same size, though - it is a real tap target, not a footnote. */
+.btn-shareline {
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--marigold);
+  background: none;
+  border: 1px solid var(--marigold);
+  border-radius: var(--radius);
+  padding: 13px 18px;
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease;
+}
+.btn-shareline:hover { background: var(--marigold); color: var(--ink); }
+.btn-shareline:active { transform: translateY(1px); }
+.btn-shareline:focus-visible { outline: 2px solid var(--paper); outline-offset: 2px; }
+/* The mid-round version is an invitation, not an action the player came for, so
+   it gives up the border and reads as a line of text until you look at it. */
+.btn-shareline-quiet {
+  border-color: transparent;
+  color: var(--muted-2);
+  padding: 10px;
+}
+.btn-shareline-quiet:hover { background: none; color: var(--marigold); }
 .roombox {
   margin-top: var(--step-2);
   padding-top: var(--step-2);
@@ -3105,9 +3134,7 @@ html, body { overflow-x: hidden; }
            named + " of " + ROOM_ROUNDS + " songs named. Same six songs for you — try beating it.";
   }
 
-  function shareRoom(code, results) {
-    var url = roomLink(code);
-    var text = roomShareMessage(results);
+  function shareThis(text, url) {
     // The sheet keeps text and url as separate fields, and apps lay them out
     // themselves. A clipboard paste has to carry its own line break.
     var toClipboard = function () {
@@ -3124,6 +3151,24 @@ html, body { overflow-x: hidden; }
       }
     } catch (e) { /* fall through */ }
     return toClipboard();
+  }
+
+  function shareRoom(code, results) {
+    return shareThis(roomShareMessage(results), roomLink(code));
+  }
+
+  // Endless has no room and no six-song total, so there is nothing to challenge
+  // anyone with - it shares the game itself. The bare page, with no #room on it,
+  // or the recipient would land in somebody else's half-played set.
+  function gameLink() {
+    try { var l = window.location; return l.origin + l.pathname + l.search; }
+    catch (e) { return ""; }
+  }
+
+  function shareGame() {
+    return shareThis(
+      "Filmi — name the Hindi film song from half a second of audio. Every miss buys you a little more.",
+      gameLink());
   }
 
   function copyText(s) {
@@ -3637,7 +3682,9 @@ html, body { overflow-x: hidden; }
             roomPoints(room.results) + " / " + ROOM_MAX_POINTS + " · round " +
             Math.min(room.results.length + 1, ROOM_ROUNDS) + " of " + ROOM_ROUNDS)
         ),
-        h("button", {
+        // Only while a round is being played. On the reveal the share sits under
+        // Next song instead, and two of them on one screen is one too many.
+        phase === "play" ? h("button", {
           className: "roombar-share",
           onClick: function () {
             shareRoom(room.code, room.results).then(function (r) {
@@ -3646,7 +3693,7 @@ html, body { overflow-x: hidden; }
               if (r === "copied" || r === "failed") setCopied(r);
             });
           }
-        }, label)
+        }, label) : null
       );
     }
 
@@ -3861,6 +3908,23 @@ html, body { overflow-x: hidden; }
                   : "Next song · " + (room.results.length + 1) + " of " + ROOM_ROUNDS)
               : "Next song"),
 
+          // Directly under the primary action, where the eye already is. This is
+          // the moment someone has just heard a song revealed and is either
+          // pleased with themselves or indignant - which is the only moment they
+          // are going to want to drag anyone else in.
+          // Not "btn btn-shareline": .btn is defined later in the sheet, so at
+          // equal specificity its background and colour beat this one's and the
+          // outline silently became a filled button identical to Next song.
+          h("button", {
+            className: "btn-shareline",
+            onClick: function () {
+              (room ? shareRoom(room.code, room.results) : shareGame())
+                .then(function (r) { if (r === "copied" || r === "failed") setCopied(r); });
+            }
+          }, copied === "copied" ? "Link copied"
+             : copied === "failed" ? "Copy failed — the link is in the address bar"
+             : room ? "Share this room" : "Share Filmi"),
+
           h("div", { className: "rows" }, guesses.map(function (g, i) {
             return h("div", {
               key: i,
@@ -3937,6 +4001,19 @@ html, body { overflow-x: hidden; }
             h("span", { className: "row-tag" }, label(STEPS[i])));
         })
       ),
+
+      // Endless has no room bar to carry a share, so it gets one here. Below the
+      // guess history rather than above it: mid-round the player is trying to
+      // name a song, and a call to action competing with the guess box would be
+      // working against the thing it is advertising.
+      !room ? h("button", {
+        className: "btn-shareline btn-shareline-quiet",
+        onClick: function () {
+          shareGame().then(function (r) { if (r === "copied" || r === "failed") setCopied(r); });
+        }
+      }, copied === "copied" ? "Link copied"
+         : copied === "failed" ? "Copy failed — the link is in the address bar"
+         : "Enjoying this? Share Filmi") : null,
 
       Foot()
     ));

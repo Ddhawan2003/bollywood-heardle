@@ -358,6 +358,16 @@ async function blockedScenario() {
 
   ok('still no network was reached', ui.urls.every(u => u.includes('itunes.apple.com')));
 
+  console.log('\n--- endless mode asks people to pass it on ---');
+  ok('a share sits on the guessing screen', !!ui.byText('Share Filmi'));
+  ui.click(ui.byText('Share Filmi'), 'share the game');
+  await wait(10);
+  ui.flush();
+  const gameShare = ui.clip[ui.clip.length - 1];
+  ok('it shares the bare game, with no room in the link',
+     gameShare.includes('https://filmi.test/') && !gameShare.includes('#room='), gameShare);
+  ok('and says what the game is', /half a second/i.test(gameShare), gameShare);
+
   console.log('\n--- give up ends the round on the attempt it is pressed ---');
   // An active round always renders six placeholders, so only FILLED rows count.
   const filled = () => ui.nodes().filter(n =>
