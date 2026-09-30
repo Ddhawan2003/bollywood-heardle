@@ -81,8 +81,7 @@ an interrupted crawl resumes where it stopped.
 node build/harvest.js               harvest, then rewrite the catalog
 node build/harvest.js --dry         harvest and report, write nothing
 node build/harvest.js --composers 4 stop after N composers (a smoke run)
-node build/harvest.js --artists 4   stop after N non-film artists
-node build/harvest.js --film-only   skip the non-film harvest entirely
+node build/harvest.js --singers 4   stop after N singers
 ```
 
 Bollywood ships in soundtrack albums, so the catalog scales by harvesting
@@ -127,81 +126,50 @@ Position ranks songs honestly *within* an era; it says nothing about how many
 slots an era deserves, so the quotas are set explicitly:
 
 ```
-2020s      340 / 340      2000s      260 / 260
-2010s      520 / 520      pre-2000   110 / 110
+2020s      170 / 170      2005-09     80 / 80
+2010s      620 / 620      pre-2005     0 / 0
 ```
 
-**The quotas are weighted hard toward recent music**, because most players are
-in their twenties and a song from before they were born is not a hard round, it
-is a dead one. With the non-film half counted too, **74% of the catalog is
-post-2010**.
+**The quotas are set by blind samples, not by theory.** Songs are drawn,
+marked known or not known by hand, and the known-rate per era moves the
+numbers. The fourth sample (100 songs, 25 per era) read:
 
-They are not weighted as hard as they could be, and the reason is a quality
-cliff. The spans are deliberately unequal: `pre-2000` skims the best of six
-decades while the 2020s quota is drawn from about six years, so the recent
-bucket reaches much further down its own ranking. Pushed to 450 the 2020s does
-fill, but its worst entries fall to a score of 32 — deep cuts nobody of any age
-knows — while the 2000s at 260 still has a floor of 88. Past roughly 340 the
-era stops buying recognisable songs and starts buying filler, so that is where
-it sits.
+```
+2000s 56%    2010-14 88%    2015-19 64%    2020s 68%
+```
 
-Alongside the quotas: 4 songs per film globally, and 35 per composer *per era*,
-so a prolific composer can appear across all four without owning any one.
+with 2000–04 at 3 of 8 against 2005–09 at 11 of 17, so the floor is 2005.
+The 2010s is the largest quota because it is the best-known decade. The 2020s
+is smaller because far more films come out now than any one person follows,
+so a big 2020s quota ends up reaching into films nobody saw. The result:
+**91% of the harvested catalog is post-2010**.
+
+Every song marked *not known* goes on `REJECTED` in `harvest.js`, by title and
+film. A rejection still uses up its film's per-film slot, so the freed slot
+goes to a different film instead of the next song from a film the player just
+showed they don't know.
+
+Alongside the quotas: at most 3 songs per film.
 
 Era needs a year, and Apple's per-track date is the date of **that pressing** —
 a 1975 song on a 2015 reissue reads as 2015. Across a whole crawl the same film
 usually appears in several pressings, so the earliest one seen is used as the
 film's year. That is still only a floor, and a film whose every pressing is a
 reissue stays late; it is what stops reissued classics from being counted as new
-releases.
+releases. One date is ignored outright: some labels stamp tracks with a
+placeholder **2001-05-01**, which under the earliest-date rule filed *Jannat 2*,
+*Heroine*, *Blood Money* and *Rangrezz* (2012–13) as 2001.
 
-### The non-film half
+### No non-film songs
 
-About a fifth of the catalog is **not from a film** — indie, hip-hop and pop
-singles from twenty named artists. Those are harvested a completely different
-way, and the difference is instructive.
+There used to be a second harvest path for indie, hip-hop and pop singles from
+30 named artists, about 208 songs. It was removed: the game is *guess the
+Bollywood song*, and a round whose answer has no film is a different game
+sharing the same pool. It is in git history if it is ever wanted back.
 
-The film path walks a composer's albums one request at a time, because the only
-reason to open an album is to read the FILM out of its name. A single has no
-film to read, so the non-film path skips albums entirely:
-
-```
-search?term=Anuv+Jain&entity=musicArtist    -> artistId          1 request
-lookup?id=<artistId>&entity=song&limit=200  -> up to 200 songs   1 request
-```
-
-**Two requests per artist rather than ~27.** There is no scoring either. The
-entire film pipeline — position, percentiles, era quotas — exists to solve
-selection under scarcity: which 1,200 of 7,576, and how to stop one era taking
-them all. Here the artists are named deliberately and the point is to get their
-catalogue, so there is nothing to select. Take the first twelve that survive the
-quality filters, in Apple's own order.
-
-Two things do need care:
-
-- **Variant filtering matters far more here.** Anuv Jain ships an acoustic cut
-  of nearly everything, and session series (Coke Studio, The Dewarists) re-record
-  songs that already exist under their own name. `BAD_TITLE` grew to cover them.
-- **These artists sing on soundtracks too.** Seeding Raghav Chaitanya pulled in
-  *Hua Main* with no film attached, so it shipped twice — once correctly as
-  *ANIMAL* and once as a non-film single. Two identities for one recording means
-  guessing the right film scores **wrong**, which is worse than not having the
-  song. A song is treated as a film duplicate when it shares both a title and a
-  performer with something on the film side. Title alone is not enough and must
-  not be used: AUR's *Shayad* and *Love Aaj Kal*'s *Shayad* really are different
-  songs, as are Zaeden's *Tere Bina* and *Guru*'s.
-
-Non-film songs carry an **empty `movie`**, which is the only marker they need.
-Since the film is what disambiguates colliding titles, and these have none,
-every song now carries a `context` — the film where there is one, the artist
-where there is not — and identity, waveform seeds and the typeahead all key off
-that instead. One flag at the top of the catalog turns the whole half off:
-
-```js
-window.INCLUDE_NON_FILM = true;   // false plays film songs only
-```
-
-With it off the pool drops from 1,456 to 1,237 and the catalog stays untouched.
+The app itself still understands a song with an empty `movie` (and the
+`INCLUDE_NON_FILM` flag still filters them), so hand-adding one works; the
+harvester just no longer produces any.
 
 ### What didn't work
 
@@ -239,18 +207,19 @@ pwsh build/build.ps1 -Verify   # build, then run both suites
 ```
 
 ```
-test/test.js           65 checks — rules, normalisation, song identity, variant
+test/test.js           79 checks — rules, normalisation, song identity, variant
                        scoring, simulated games, and LIVE iTunes resolution over
-                       JSONP: the whole catalog batched (1,456 ids in 8 requests)
+                       JSONP: the whole catalog batched (961 ids in 5 requests)
                        and single songs by the runtime path
 test/test-offline.js   12 checks — simulates a CSP refusal; asserts both
                        resolution paths degrade in under 2s instead of hanging
-test/test-ui.js        54 checks — drives the real App component through whole
+test/test-ui.js        146 checks — drives the real App component through whole
                        rounds against a hand-rolled React. Blocked scenario: a
                        fixture catalog with a deliberate title collision.
                        Online scenario: lookups answer for real and one song is
                        deliberately preview-less, covering lazy resolution,
-                       prefetch, and the dud-song reroll
+                       prefetch, and the dud-song reroll. Rooms, sharing, and
+                       regressions (a room entered twice, Back not stopping audio)
 ```
 
 `test.js` hits the real API, so it needs a network connection and will fail if

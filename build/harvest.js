@@ -71,7 +71,20 @@ const COMPOSERS = [
   // Small modern soundtrack credits that were never seeded, so their film work
   // could only arrive by accident, as a featured credit on someone else's album.
   'Abhijit Vaghani', 'Anurag Vashisht', 'Aman Pant', 'Akhil Sachdeva', 'B Praak',
+  // Cut in the same hand pass as the 1970s-90s names below, but these two are
+  // 2010s composers - Aashiqui 2, Citylights, Hamari Adhuri Kahani - and the
+  // 2010s is the best-known era. Back in on trial, 2026-09-30, pending a
+  // blind batch of only the songs they add.
+  'Mithoon', 'Jeet Gannguli',
 ];
+
+// Composers on trial. They are harvested like any other, but select() keeps
+// them out of the era quotas and adds their songs on top, so trying a composer
+// never displaces a song a player has already vetted. A blind batch of just
+// their songs decides what stays (misses go on REJECTED). Leaving a composer
+// here for good is fine - it only means their songs sit on top of the quotas
+// rather than competing for them.
+const TRIAL_COMPOSERS = new Set(['Mithoon', 'Jeet Gannguli']);
 
 // Deliberately NOT harvested. These twelve shipped 390 of the previous 1,237
 // film songs and were cut by hand, not by score: mostly pre-2000 catalogue that
@@ -92,26 +105,13 @@ const COMPOSERS = [
 // their single biggest soundtrack. The rest of that era is carried by Pritam,
 // Tanishk Bagchi, Sachin-Jigar, Vishal Mishra, Amaal Mallik and Sachet-Parampara.
 
-// Hindi and Punjabi music that is NOT from a film: indie, hip-hop, pop singles.
-// These are harvested a completely different way - see harvestArtists - because
-// there is no film to hang them off. Seeded from a Spotify liked-songs export,
-// so the list is what one player actually listens to rather than a guess at a
-// canon; edit it freely.
-const ARTISTS = [
-  'Anuv Jain', 'Prateek Kuhad', 'AUR', 'King', 'Seedhe Maut',
-  'MC STAN', 'KR$NA', 'DIVINE', 'Raftaar', 'Karan Aujla',
-  // Dino James and Osho Jain sat here and were dropped by hand.
-  'Yashraj', 'Abdul Hannan', 'Ritviz', 'When Chai Met Toast',
-  'Raghav Chaitanya', 'Aditya A', 'Mitraz', 'Zaeden',
-  // Punjabi-pop and the singles side of playback singers who release outside
-  // film. NON_HINDI_LOOSE deliberately lets Punjabi through, which is most of
-  // the point of Guru Randhawa, Imran Khan and Ikky.
-  'Guru Randhawa', 'Badshah', 'Darshan Raval', 'B Praak', 'Tony Kakkar',
-  'Imran Khan', 'Atif Aslam', 'Neha Kakkar', 'Tulsi Kumar', 'Akhil Sachdeva',
-  'Ikky', 'Dominique Cerejo',
-];
+// There used to be a non-film path here too: indie, hip-hop and pop singles from
+// 30 named artists (Anuv Jain, King, MC STAN, Karan Aujla...), about 208 songs.
+// It was removed by hand. The game is "guess the Bollywood song", and a round
+// whose answer has no film was a different game sharing the same pool. It lives
+// in git history if it is ever wanted back.
 
-// Playback singers, harvested by harvestSingers - a THIRD path, and the only one
+// Playback singers, harvested by harvestSingers - a SECOND path, and the only one
 // seeded by who SANG a song rather than who wrote it.
 //
 // The film path reaches a singer only by accident: it walks composers, so a
@@ -119,10 +119,6 @@ const ARTISTS = [
 // to have hired them. That works for the ubiquitous - Arijit landed 115 songs
 // without ever being named - and fails badly for anyone whose canon sits with
 // composers we do not seed. Atif Aslam had 6.
-//
-// Several of these names are on ARTISTS as well. That is deliberate, not a
-// duplicate: the two paths split the same artist's catalogue down the middle,
-// harvestArtists keeping the singles and this keeping the film songs.
 const SINGERS = [
   'Arijit Singh', 'Shreya Ghoshal', 'Sonu Nigam', 'KK', 'Mohit Chauhan',
   'Shaan', 'Armaan Malik', 'Neeti Mohan', 'Nikhita Gandhi', 'Benny Dayal',
@@ -130,7 +126,31 @@ const SINGERS = [
   'Neeraj Shridhar', 'Atif Aslam', 'Darshan Raval', 'Tulsi Kumar',
   'Neha Kakkar', 'Dominique Cerejo', 'Amitabh Bhattacharya', 'Akhil Sachdeva',
   'B Praak', 'Guru Randhawa', 'Badshah',
+  // On trial - see TRIAL_SINGERS.
+  'Yo Yo Honey Singh', 'Jubin Nautiyal', 'Vishal Mishra',
+  'Dhvani Bhanushali', 'Javed Ali', 'Sukhwinder Singh',
+  // Tried and dropped after one batch - Amit Mishra 0/9, Ash King 1/8, Jasleen
+  // Royal 1/9, Sunidhi Chauhan 1/4, Ankit Tiwari 0/1. The four songs of theirs
+  // that were known are pinned as seeds in the catalog.
 ];
+
+// Singers on trial, picked by the player 2026-09-30. Like TRIAL_COMPOSERS their
+// songs stay out of the quotas, and like every additive source they ship only
+// once the player has marked them known.
+const TRIAL_SINGERS = new Set([
+  'Yo Yo Honey Singh', 'Jubin Nautiyal', 'Vishal Mishra',
+  'Dhvani Bhanushali', 'Javed Ali', 'Sukhwinder Singh',
+]);
+
+// Singers whose first batch went well enough to dig further into: Honey Singh
+// 6/9, Javed Ali 4/5, Dhvani Bhanushali 3/7, Sukhwinder Singh 2/5. They get a
+// deeper cut of their catalogue and are exempt from the era floor, which is
+// only there to keep batches small and would otherwise hide most of what the
+// deeper cut finds. Everything still ships only once marked known.
+const DEEPER_SINGERS = new Map([
+  ['Yo Yo Honey Singh', 60], ['Javed Ali', 60],
+  ['Dhvani Bhanushali', 60], ['Sukhwinder Singh', 60],
+]);
 
 // Songs a player was dealt, blind, and could not name. Ground truth rather than
 // a prediction, which is why they are listed one by one instead of being
@@ -159,10 +179,237 @@ const REJECTED = [
   ['Dua', 'Kurbaan'],
   ['Chhatriwali - Title Track', 'Chhatriwali'],
   ['Billi Billi', 'Kisi Ka Bhai Kisi Ki Jaan'],
-  // Non-film, so the second field is empty.
-  ['Bbm', ''],
-  ['Naash', ''],
-  ["We Doin' It Big", ''],
+
+  // Fourth blind sample, 2026-09-30: 100 film songs, 25 per era, 31 not known.
+  // Some of these fall before the 2005 cutoff anyway; listed regardless, for the
+  // reason given at the bottom of this list.
+  ['Mera Hua', 'Ek Deewane Ki Deewaniyat'],
+  ['Le Jaa Tu Mujhe', 'F.A.L.T.U'],
+  ['Silsila Ye Chahat Ka', 'Devdas'],
+  ['Yeh Tara Woh Tara', 'Swades'],
+  ['Couple Goals', 'Bandish Bandits'],
+  ['Ticket to Hollywood', 'Jhoom Barabar Jhoom'],
+  ['Kholo Kholo', 'Taare Zameen Par'],
+  ['Ajab Si', 'Om Shanti Om'],
+  ['Shubh Din', 'Parmanu'],
+  ['Mehfooz', 'Apne'],
+  ['Chhalka Chhalka Re', 'Saathiya'],
+  ['Badhaaiyan Tenu', 'Badhaai Ho'],
+  ['Aafreen Tera Chehra', 'Red the Dark Side'],
+  ['Hoshiyar Rehna', 'Baadshaho'],
+  ['Raataan Lambiyan', 'Shershaah'],
+  ['Ka Watt Te Saare Nave', 'F.U. (Friendship Unlimited)'],
+  ['Tere Mere', 'Chef'],
+  ['Ram Siya Ram', 'Adipurush'],
+  ['O Mahey', 'Akelli'],
+  ['Jhoot Nahin Bolna', 'Aap Kaa Surroor'],
+  ['Nachan Nu Jee Karda', 'Angrezi Medium'],
+  ['Khulke Jeene Ka', 'Dil Bechara'],
+  ['Jalte Diye', 'Prem Ratan Dhan Payo'],
+  ['Yun Hi Chala Chal', 'Swades'],
+  ['Singh & Kaur', 'Singh Is Bliing'],
+  ['Kokh Ke Rath Mein', 'KGF Chapter 1'],
+  ['Dil Mera Muft Ka', 'Agent Vinod'],
+  ['Chalao Na Naino Se', 'Bol Bachchan'],
+  ['Chupke Se', 'Saathiya'],
+  ['Mere Baabula (Madhaniyaa)', 'Jawaani Jaaneman'],
+  ['Chal Maar', 'Tutak Tutak Tutiya'],
+
+  // Not a rejection by a player: Apple withdrew this preview, so the live test
+  // fails on it and the app would only ever deal it to discard it.
+  ['Ikk Vaari', 'Mere Husband Ki Biwi'],
+
+  // Fifth sample, 2026-09-30: every song the additive passes had added (trial
+  // composers Mithoon and Jeet Gannguli, plus extra songs from known films).
+  // 42 of 161 known; these are the 119 that were not.
+  ["Naina", "Gori Tere Pyaar Mein"],
+  ["Phir Se", "Phir Se"],
+  ["Amdavad", "Celebrate Kai Po Che"],
+  ["Tumko To Aana Hi Tha", "Jai Ho"],
+  ["Chaasni Si", "Marudhar Express"],
+  ["Hey Kaala Bandar", "Delhi-6"],
+  ["Sadka", "I Hate Luv Storys"],
+  ["Zehreelay", "Rock On"],
+  ["Tanki", "Youngistaan"],
+  ["Dilnashin Dilnashin", "Aashiq Banaya Aapne"],
+  ["Naacho Re", "Jai Ho"],
+  ["Gunaah", "Blood Money"],
+  ["Maana Ke Hum Yaar Nahin", "Meri Pyaari Bindu"],
+  ["Aankhon Aankhon", "Bhaag Johnny"],
+  ["Ishq Mein Ruswaa", "Dangerous Ishhq"],
+  ["Rehna Tu", "Delhi-6"],
+  ["Ready Steady Po", "Chennai Express"],
+  ["Meri Tum Ho", "Ludo"],
+  ["Dil Julaha", "Ludo"],
+  ["Maine Socha Ke Chura Loon", "Phir Se"],
+  ["Yeh Hausle", "83"],
+  ["Shamshera - Title Track", "Shamshera"],
+  ["Aye Khuda", "Murder 2"],
+  ["Ae Dilla Marjaaniyaan", "Tadap"],
+  ["Kurbaan Hua", "Kurbaan"],
+  ["Hum Naa Rahein Hum", "Creature 3D"],
+  ["Main Jiyoonga", "Break Ke Baad"],
+  ["Tu Hai Sheetal Dhaara", "Adipurush"],
+  ["CHUMMA", "Vicky Vidya Ka Woh Wala Video"],
+  ["Ye Tumhari Meri Baatein", "Rock On"],
+  ["Rishtey", "Life In a Metro"],
+  ["Kashmir Main Tu Kanyakumari", "Chennai Express"],
+  ["Soniye", "Aksar"],
+  ["Aao Kabhi Haveli Pe", "Stree"],
+  ["Kar Salaam", "Life In a Metro"],
+  ["Mundiyan", "Baaghi 2"],
+  ["Maula", "Jism 2"],
+  ["Tajdar-E-Haram", "Satyameva Jayate"],
+  ["Mohabbat Ke", "Aksar"],
+  ["Let's Break Up", "Dear Zindagi"],
+  ["Lo Maan Liya", "Raaz Reboot"],
+  ["Victory at Lords", "83"],
+  ["Jaadui", "Tu Jhoothi Main Makkaar"],
+  ["Aadat Hai Voh", "Patiala House"],
+  ["Sakht Jaan", "83"],
+  ["Bol Beliya", "Kill Dil"],
+  ["Monta Re", "Lootera"],
+  ["Raatein", "Shivaay"],
+  ["Mere Khuda", "Youngistaan"],
+  ["Iss Tarah", "Meri Pyaari Bindu"],
+  ["O Yaara Dil Lagana", "Sanak"],
+  ["Iss Qadar Pyar Hai", "Bhaag Johnny"],
+  ["Dilli-6", "Delhi-6"],
+  ["Allah Hi Reham", "My Name Is Khan"],
+  ["Wanna Mash Up?", "Highway"],
+  ["Kaale Naina", "Shamshera"],
+  ["Suna Hai", "Sanak"],
+  ["Teri Yaad", "Teraa Surroor"],
+  ["Sweeta", "Kill Dil"],
+  ["Sooha Saaha", "Highway"],
+  ["Ek Do Teen", "Baaghi 2"],
+  ["Yeh Kasoor", "Jism 2"],
+  ["Lalla Lalla Lori", "Welcome 2 Karachi"],
+  ["Awari", "Ek Villain"],
+  ["Soney Do", "Citylights"],
+  ["Whats Goin' On", "Salaam Namaste"],
+  ["Marjaaniya", "Vicky Vidya Ka Woh Wala Video"],
+  ["Tinak Tinak", "Tanhaji - The Unsung Warrior"],
+  ["Rasiya", "Kurbaan"],
+  ["Tum Chale Gaye", "Marudhar Express"],
+  ["Just Go to Hell Dil", "Dear Zindagi"],
+  ["Ji Huzoori", "Ki & Ka"],
+  ["Ijazat", "One Night Stand"],
+  ["Raaz Aankhein Teri", "Raaz Reboot"],
+  ["Tu Mera Hogaya Hai", "Tadap"],
+  ["Kabhi Aayine Pe Likha Tujhe", "Hate Story 2"],
+  ["Dil Duffer", "Gori Tere Pyaar Mein"],
+  ["Jaan 'nisaar (Arijit)", "Kedarnath"],
+  ["Teri Yaadon Se", "Blood Money"],
+  ["Loot Jayenge", "Aksar"],
+  ["Bowl Me Over", "Celebrate Kai Po Che"],
+  ["Hunkara", "Shamshera"],
+  ["Baba Bolta Hain Bas Ho Gaya", "Sanju"],
+  ["Tum Se", "Teri Baaton Mein Aisa Uljha Jiya"],
+  ["Ji Huzoor", "Shamshera"],
+  ["Rozana", "Phir Se"],
+  ["Tere Naina", "My Name Is Khan"],
+  ["Ankhein Mili", "Sanak"],
+  ["Naina Re", "Dangerous Ishhq"],
+  ["Saiyaara", "Ek Tha Tiger"],
+  ["Tujhse Pehle Tujhse Zyada", "Marudhar Express"],
+  ["Suno Na Sangemarmar", "Youngistaan"],
+  ["Ek Charraiya", "Citylights"],
+  ["O Meri Jaan", "Raaz Reboot"],
+  ["Zindagi Se", "Raaz 3"],
+  ["Kho Diya", "Bhoomi"],
+  ["Abhi Abhi", "Jism 2"],
+  ["Mushkil Hai", "Vicky Vidya Ka Woh Wala Video"],
+  ["Bhopu Baj Raha Hain", "Sanju"],
+  ["Daayre", "Dilwale"],
+  ["Umeed", "Dangerous Ishhq"],
+  ["Yeh Kaisi Jagah", "Hamari Adhuri Kahani"],
+  ["Thaaein Thaaein", "Do Patti"],
+  ["Tere Naina Maar Hi Daalenge", "Jai Ho"],
+  ["Do Peg Maar", "One Night Stand"],
+  ["Tu Jahaan", "Salaam Namaste"],
+  ["Udd Jaa Kaale Kaava", "Gadar 2"],
+  ["Hua Na", "Jolly LLB 3"],
+  ["Huppa Huiya", "Adipurush"],
+  ["Zinda", "Lootera"],
+  ["Adhuri Zindagi", "Teraa Surroor"],
+  ["Ishq Da Sutta", "One Night Stand"],
+  ["Baby When You Talk To Me", "Patiala House"],
+  ["Aa Zara", "Murder 2"],
+  ["Dillagi Main Jo Beet Jaye", "Aashiq Banaya Aapne"],
+  ["Dhoop Ke Makaan", "Break Ke Baad"],
+  ["Dua Karo", "Street Dancer 3D"],
+  ["Chaahat", "Blood Money"],
+  ["Phir Na Milen Kabhi", "Malang - Unleash the Madness"],
+
+  // Sixth sample, 2026-09-30: the pending list after 11 trial singers were
+  // added. 28 of 94 known; these are the 66 that were not.
+  ["Humdum", "Savi"],
+  ["Ik Pal Yahi", "Creature 3D"],
+  ["Agar Ho Tum", "Mr. And Mrs. Mahi"],
+  ["Jeeley Yeh Lamhe", "Days of Tafree - In Class Out of Class"],
+  ["Aankhon Ki Gustaakhiyan Title Track", "Aankhon Ki Gustaakhiyan"],
+  ["Mera Ishq", "Saansein"],
+  ["Bloody Hell", "Rangoon"],
+  ["Kinna Sona", "Bhaag Johnny"],
+  ["Majboor Tu Bhi Kahin", "1920 Evil Returns"],
+  ["Mann Kaafira", "Sector 36"],
+  ["Din Shagna Da", "Phillauri"],
+  ["Birthday Bash", "Dilliwaali Zaalim Girlfriend"],
+  ["Naam - E - Wafa", "Creature 3D"],
+  ["Yaaram", "Ek Thi Daayan"],
+  ["Veere", "Veere Di Wedding"],
+  ["Meri Zindagi", "Bhaag Johnny"],
+  ["Aakhri Ishq", "Dhurandhar The Revenge"],
+  ["Duur Na Karin", "Khel Khel Mein"],
+  ["Kuch Din", "Kaabil"],
+  ["Tay Hai", "Rustom"],
+  ["Har Mod Par Umeed Hai", "Ribbon"],
+  ["Parda Daari", "Janhit Mein Jaari"],
+  ["Peh Gaya Khalara", "Fukrey Returns"],
+  ["Sehra", "Kahan Shuru Kahan Khatam"],
+  ["Tu Zaroori", "Zid"],
+  ["Ishq Manzoor", "Sunny Sanskari Ki Tulsi Kumari"],
+  ["Bismil", "Haider"],
+  ["Mashooqana", "Heartless"],
+  ["Rabba Meray Haal Da Mehram Tu", "Guest iin London"],
+  ["Ishare Tere", "Ishare Tere"],
+  ["Teri Dastaan", "Hichki"],
+  ["Kisi Se Pyar Ho Jaye", "Kaabil"],
+  ["Naseeb Se", "Satyaprem Ki Katha"],
+  ["Honey Bunny", "Citadel Honey Bunny"],
+  ["Dil Hai Bholaa", "Bholaa"],
+  ["Kya Raaz Hai", "Raaz 3"],
+  ["Foolishq", "Ki & Ka"],
+  ["Pikley Pom", "Baby John"],
+  ["Main Nikla Gaddi Leke", "Gadar 2"],
+  ["Phir Mulaaqat", "Why Cheat India"],
+  ["Bezubaan Ishq", "Bezubaan Ishq"],
+  ["Oh My Love", "Raaz 3"],
+  ["Jana Gana Mana", "Major"],
+  ["Tere Naal Ishqa", "Shivaay"],
+  ["Ik Tu Hai ❤️", "Attack"],
+  ["Rula Diya", "Batla House"],
+  ["Aaur Main Khush Hoon", "Kahaani 2"],
+  ["Billionaire", "Baazaar"],
+  ["Laaj Sharam", "Veere Di Wedding"],
+  ["So Gaya Yeh Jahan", "Bypass Road"],
+  ["Mitra Re", "Runway 34"],
+  ["Pehla Nasha", "Kuchh Bheege Alfaaz"],
+  ["Ae Pagli", "Maja Ma"],
+  ["Hai Dil Ye Mera", "Hate Story 2"],
+  ["Sikandar Naache", "Sikandar"],
+  ["Tu Banke Hawa", "Dhokha Round D Corner"],
+  ["Diwali", "Apurva"],
+  ["The Fall", "Runway 34"],
+  ["Totey Ud Gaye", "Ek Thi Daayan"],
+  ["Mehboob Ki", "Creature 3D"],
+  ["Shah Ka Rutba", "Agneepath"],
+  ["Chhota Hoon Main", "Dear Dad"],
+  ["Uh Oh Uh Oh", "Mujhse Fraaandship Karoge"],
+  ["Banjarey", "Fugly"],
+  ["Dil Mera", "Guest iin London"],
+  ["Ole Ole 2.0", "Jawaani Jaaneman"],
 
   // Rejected in the same pass but already outside the catalog at the time -
   // mostly pre-2000, which had just gone to zero. Listed anyway, and the reason
@@ -179,7 +426,213 @@ const REJECTED = [
   ['Kuchh Khaas', 'Fashion'],
   ['Main Teri Hi Rahoon', 'Chhatriwali'],
   ['Tu Meri Zindagi-Adayein', 'T-Series Mixtape Rewind Season 3'],
-  ['Unstoppable', ''],
+
+  // Seventh sample, 2026-09-30: deeper cuts from Honey Singh, Javed Ali, Dhvani
+  // Bhanushali and Sukhwinder Singh. 10 of 47 known. Nayan, Leja Re, Baby Girl
+  // and Gallan Goriyan are here whatever the answer: they are non-film singles
+  // Apple files as though each were a film of the same name.
+  ["Tumse Mila Doon", "Double Xl"],
+  ["Tuu", "Auron Mein Kahan Dum Tha"],
+  ["Kya Wajah Thi Tere Jaane Ki", "5 Ghantey Mein 5 Crore"],
+  ["Kaise Kahein Alvida", "Yeh Saali Zindagi"],
+  ["Dil Dar-Ba-Dar", "Yeh Saali Zindagi"],
+  ["Prem Ki Leela", "Krishnavataram - Part 1: The Heart (Hridayam)"],
+  ["Nayan", "Nayan"],
+  ["Leja Re", "Leja Re"],
+  ["Baby Girl", "Baby Girl"],
+  ["Ek Aur Bismil", "Haider"],
+  ["Gallan Goriyan", "Gallan Goriyan"],
+  ["Shor Machega", "Mumbai Saga"],
+  ["Tu Hi Haqeeqat", "Tum Mile"],
+  ["Saathiya", "Major"],
+  ["Sachin Sachin", "Sachin - A Billion Dreams"],
+  ["Tippa", "Rangoon"],
+  ["Tu Meri Roja", "Kushi"],
+  ["Main Sharabi", "Cocktail"],
+  ["Jai Mata Di", "Nanu Ki Jaanu"],
+  ["Jhoom Sharaabi", "De De Pyaar De 2"],
+  ["Ishq De Shot", "Kahan Shuru Kahan Khatam"],
+  ["Mirza", "Maidaan"],
+  ["Kilimanjaro", "Robot"],
+  ["Damaa Dam Mast Kalandar", "Welcome Back"],
+  ["Tu Muskura", "Yuvvraaj"],
+  ["Naina Lade", "Dabangg 3"],
+  ["Nazar Lag Jayegi", "Bholaa"],
+  ["Shabad Gurbani", "Halla Bol"],
+  ["O Re Rangreza (Qawaali)", "Jolly LLB 2"],
+  ["Ek Din Teri Raahon", "Naqaab"],
+  ["Peelings - HINDI", "Pushpa 2 The Rule - HINDI"],
+  ["Ban Piya", "Suswagatam Khushaamadeed"],
+  ["Pyaar Mein", "Thank You"],
+  ["Aagaz", "Cypher"],
+  ["Akh Ladiye", "Neal ‘n’ Nikki"],
+  ["Kahan Shuru Kahan Khatam", "Kahan Shuru Kahan Khatam"],
+  ["Rangtaari", "Loveyatri"],
+];
+
+// The other half of the same samples: songs the player DID name. A known song
+// is evidence about its film - they saw it, or had the soundtrack on - so a
+// film listed here may carry songsPerKnownFilm songs instead of songsPerFilm.
+// Checked on title AND film, like REJECTED; only the film is used today.
+// Earlier samples recorded only the misses, so this starts at the fourth.
+const KNOWN = [
+  // Fourth blind sample, 2026-09-30: 69 of 100 known.
+  ['Patakha Guddi', 'Highway'],
+  ['Galliyan', 'Ek Villain'],
+  ['Mere Haath Mein', 'Fanaa'],
+  ['Raanjhan', 'Do Patti'],
+  ['Bigadne De', '83'],
+  ['Tum Se Hi', 'Jab We Met'],
+  ['Kya Karoon?', 'Wake Up Sid'],
+  ['Bole Chudiyan', 'Kabhi Khushi Kabhie Gham'],
+  ['Rola Pe Gaya', 'Patiala House'],
+  ['Lag Ja Gale', 'Bhoomi'],
+  ['Main Woh Chaand', 'Teraa Surroor'],
+  ['Jai Shri Ram', 'Adipurush'],
+  ['Shankara Re Shankara', 'Tanhaji - The Unsung Warrior'],
+  ['Janam Janam', 'Phata Poster Nikhla Hero'],
+  ['Tera Rastaa Chhodoon Na', 'Chennai Express'],
+  ['Noor E Khuda', 'My Name Is Khan'],
+  ['Aashiq Banaya Aapne', 'Aashiq Banaya Aapne'],
+  ['Sawaar Loon', 'Lootera'],
+  ['One Two Three Four (Get On the Dance Floor)', 'Chennai Express'],
+  ['Offo', '2 States'],
+  ['Aabaad Barbaad', 'Ludo'],
+  ['Chhote Chhote Peg', 'Sonu Ke Titu Ki Sweety'],
+  ['Adhoore', 'Break Ke Baad'],
+  ['Pyaar Hota Kayi Baar Hai', 'Tu Jhoothi Main Makkaar'],
+  ['Lagi Lagi', 'Aksar'],
+  ['Kya Haal Hai', 'Phir Aayi Hasseen Dillruba'],
+  ['Teri Mitti', 'Kesari'],
+  ['Meethi Boliyaan', 'Celebrate Kai Po Che'],
+  ['Oodhni', 'Tere Naam'],
+  ['Haareya', 'Meri Pyaari Bindu'],
+  ['Alvida', 'Life In a Metro'],
+  ['Muqabla', 'Street Dancer 3D'],
+  ['Lehra Do', '83'],
+  ['Kill Dil', 'Kill Dil'],
+  ['Tum Jo Mile Ho', 'Vicky Vidya Ka Woh Wala Video'],
+  ['Tumse Bhi Zyada', 'Tadap'],
+  ['Laapata', 'Ek Tha Tiger'],
+  ['Chingam Chabake', 'Gori Tere Pyaar Mein'],
+  ['Main Badhiya Tu Bhi Badhiya', 'Sanju'],
+  ['Chogada', 'Loveyatri'],
+  ['Sitaare', 'Ikkis'],
+  ['Kamariya', 'Stree'],
+  ['Tu Hi Hai', 'Dear Zindagi'],
+  ['Tu Hi Rab Tu Hi Dua', 'Dangerous Ishhq'],
+  ['Dilbar', 'Satyameva Jayate'],
+  ['Dil To Bachcha Hai', 'Ishqiya'],
+  ['Manma Emotion Jaage', 'Dilwale'],
+  ['Qaafirana', 'Kedarnath'],
+  ['I Hate Luv Storys', 'I Hate Luv Storys'],
+  ['Tum Kya Mile', 'Rocky Aur Rani Kii Prem Kahaani'],
+  ['Salaam Namaste', 'Salaam Namaste'],
+  ['Chanchal Mann Ati Random', 'Shuddh Desi Romance (Original Motion Pictures Soundtrack)'],
+  ['Abhi Toh Party Shuru Hui Hai', 'Khoobsurat'],
+  ['Masakali', 'Delhi-6'],
+  ['Fitoor', 'Shamshera'],
+  ['Dhoom Machale', 'Dhoom'],
+  ['Mar Jaawan Mit Jaawan', 'Aashiq Banaya Aapne'],
+  ['Glass Uchhi Rakhey', 'Jolly LLB 3'],
+  ['Laal Peeli Akhiyaan', 'Teri Baaton Mein Aisa Uljha Jiya'],
+  ['Humraah', 'Malang - Unleash the Madness'],
+  ['Baaki Sab First Class Hai', 'Jai Ho'],
+  ['Tere Mast Mast Do Nain', 'Dabangg'],
+  ['Balam Pichkari', 'Yeh Jawaani Hai Deewani'],
+  ['Tere Pyaar Mein', 'Tu Jhoothi Main Makkaar'],
+  ['Aala Re Aala', 'Simmba'],
+  ['Meri Jaan', 'Gangubai Kathiawadi'],
+  ['Sweetheart', 'Kedarnath'],
+  ['Rock On!!', 'Rock On'],
+  ['Ali Maula', 'Kurbaan'],
+
+  // Fifth sample, 2026-09-30: 42 of the 161 additive songs.
+  ["Iktara", "Wake Up Sid"],
+  ["High Heels Te Nachche", "Ki & Ka"],
+  ["Maa Ka Phone", "Khoobsurat"],
+  ["Khairiyat", "Gadar 2"],
+  ["Bahara", "I Hate Luv Storys"],
+  ["Nagada Nagada", "Jab We Met"],
+  ["Most Wanted Munda", "Ki & Ka"],
+  ["Mere Mehboob", "Vicky Vidya Ka Woh Wala Video"],
+  ["Bandeya Rey Bandeya", "Simmba"],
+  ["Mera Wala Dance", "Simmba"],
+  ["Humdard", "Ek Villain"],
+  ["Show Me the Thumka", "Tu Jhoothi Main Makkaar"],
+  ["Bom Diggy Diggy", "Sonu Ke Titu Ki Sweety"],
+  ["Lagdi Lahore Di", "Street Dancer 3D"],
+  ["Rang De", "My Name Is Khan"],
+  ["Iski Uski", "2 States"],
+  ["Daddy Mummy", "Bhaag Johnny"],
+  ["Jaadu", "Do Patti"],
+  ["Preet", "Khoobsurat"],
+  ["Daag", "Bhoomi"],
+  ["Kudmayi", "Rocky Aur Rani Kii Prem Kahaani"],
+  ["Photocopy", "Jai Ho"],
+  ["Aaj Phir", "Hate Story 2"],
+  ["Pink Lips", "Hate Story 2"],
+  ["Dekho Na", "Fanaa"],
+  ["Humnava", "Hamari Adhuri Kahani"],
+  ["Darkhaast", "Shivaay"],
+  ["Janam Janam", "Dilwale"],
+  ["Life Is Crazy", "Wake Up Sid"],
+  ["Dhindhora Baje Re", "Rocky Aur Rani Kii Prem Kahaani"],
+  ["Hale Dil", "Murder 2"],
+  ["Rafta Rafta", "Raaz 3"],
+  ["Maiyya", "Do Patti"],
+  ["Sawan Aaya Hai", "Creature 3D"],
+  ["Lagan Lagi", "Dangerous Ishhq"],
+  ["Deewana Kar Raha Hai", "Raaz 3"],
+  ["Chaandaniya", "2 States"],
+  ["Dilliwaali Girlfriend", "Yeh Jawaani Hai Deewani"],
+  ["Shuddh Desi Romance", "Shuddh Desi Romance (Original Motion Pictures Soundtrack)"],
+  ["Hui Malang", "Malang - Unleash the Madness"],
+  ["Kaun Nachdi", "Sonu Ke Titu Ki Sweety"],
+  ["Aao Milo Chalo", "Jab We Met"],
+
+  // Sixth sample, 2026-09-30: 28 of 94 pending songs.
+  ["Nachde Ne Saare", "Baar Baar Dekho"],   // the one song left pending, known
+  ["Naacho Naacho", "RRR"],
+  ["Vaaste", "Vaaste"],
+  ["Matru Ki Bijlee Ka Mandola", "Matru Ki Bijlee Ka Mandola"],
+  ["Current Laga Re", "Cirkus"],
+  ["Galat Baat Hai", "Main Tera Hero"],
+  ["Gun Gun Guna", "Agneepath"],
+  ["Kho Gaye Hum Kahan", "Baar Baar Dekho"],
+  ["Jashn-e-Ishqa", "Gunday"],
+  ["Punjabiyaan Di Battery", "Mere Dad Ki Maruti (Original Motion Pictures Soundtrack)"],
+  ["Kaabil Hoon", "Kaabil"],
+  ["Pump It (The Workout Song)", "Ki & Ka"],
+  ["Phir Mohabbat", "Murder 2"],
+  ["Barbaad", "Saiyaara"],
+  ["Srivalli", "Pushpa the Rise Part - 01"],
+  ["Gazab Ka Hai Din", "Dil Juunglee"],
+  ["Manali Trance", "The Shaukeens"],
+  ["Party All Night", "Boss"],
+  ["Tujhko Bhulaana", "Murder 2"],
+  ["Dhan Te Nan", "Kaminey"],
+  ["Jaanam", "Bad Newz"],
+  ["Tum Ho Toh", "Saiyaara"],
+  ["Boss", "Boss"],
+  ["Tinku Jiya", "Yamla Pagla Deewana"],
+  ["Party With the Bhoothnath", "Bhoothnath Returns"],
+  ["Sauda Khara Khara", "Good Newwz"],
+  ["Dil Jhoom", "Gadar 2"],
+  ["Baarish", "Half Girlfriend"],
+  ["Chaar Botal Vodka", "Ragini MMS 2"],
+
+  // Seventh sample, 2026-09-30: 10 of 47.
+  ["Punjabiyaan Di Battery", "Mere Dad Ki Maruti"],
+  ["Udi Udi Jaye", "Raees"],
+  ["Chaap Tilak", "Amar Prem Ki Prem Kahani"],
+  ["Singham", "Singham"],
+  ["Aao Raja", "Gabbar Is Back"],
+  ["Fugly", "Fugly"],
+  ["Ibn-E-Batuta", "Ishqiya"],
+  ["Alcoholic", "The Shaukeens"],
+  ["Anarkali Disco Chali", "Housefull 2"],
+  ["Hud Hud Dabangg", "Dabangg"],
 ];
 
 const CONFIG = {
@@ -193,10 +646,6 @@ const CONFIG = {
   // seeds went away, so the catalog has to come from MORE FILMS PER COMPOSER
   // rather than more songs per film - see songsPerFilm below.
   albumsPerComposer: 150,
-  // 12 down to 8, for the same reason the era quotas came down: Apple returns an
-  // artist most-prominent-first, so songs 9 through 12 are the tail of a named
-  // artist's catalogue and the least likely to be recognised.
-  songsPerArtist: 8,
   songsPerSinger: 25,      // film songs reached via the singer rather than the composer
 
   // Lowered from 4 to widen the catalog across soundtracks rather than dig into
@@ -212,6 +661,8 @@ const CONFIG = {
   // is what a sample that size does. Keep the number for the breadth, not for a
   // recognisability claim it cannot support.
   songsPerFilm: 3,
+  // ...raised for a film the player has shown they know - see KNOWN.
+  songsPerKnownFilm: 5,
 
   // Effectively off. It existed to stop one composer owning an era back when
   // there were 28 of them; with 16 hand-picked names, a composer taking a large
@@ -269,11 +720,20 @@ const CONFIG = {
 // seven from is not a hard era, it is a dead round with a soundtrack. Everything
 // it gives up goes to the 2010s, which is not merely the best-known decade here
 // but the best-known by seventeen points.
+// Fourth sample, stratified this time - 25 per era rather than drawn the way the
+// app deals, so the small eras get a real reading:
+//
+//   2000s 56%   2010-14 88%   2015-19 64%   2020s 68%
+//
+// and inside the 2000s the line is sharp: 2000-04 went 3 of 8, 2005-09 11 of
+// 17. So the cutoff moved from 2000 to 2005. That is a floor on the film's
+// year, which is why the placeholder-date fix in yearOf had to land first -
+// without it four 2012-13 films read as 2001 and would have been cut.
 const ERAS = [
   { name: '2020s',    from: 2020, to: 9999, quota: 170 },
   { name: '2010s',    from: 2010, to: 2019, quota: 620 },
-  { name: '2000s',    from: 2000, to: 2009, quota: 130 },
-  { name: 'pre-2000', from: 1,    to: 1999, quota: 0   },
+  { name: '2005-09',  from: 2005, to: 2009, quota: 80  },
+  { name: 'pre-2005', from: 1,    to: 2004, quota: 0   },
   { name: 'undated',  from: 0,    to: 0,    quota: 0   },
 ];
 
@@ -291,11 +751,10 @@ CONFIG.target = flag('target', CONFIG.target);
 CONFIG.albumsPerComposer = flag('albums', CONFIG.albumsPerComposer);
 const COMPOSER_LIMIT = flag('composers', COMPOSERS.length);
 const SINGER_LIMIT = flag('singers', SINGERS.length);
-const ARTIST_LIMIT = flag('artists', ARTISTS.length);
-const FILM_ONLY = argv.includes('--film-only');   // skip the non-film harvest
 // Writes every chosen song with the score that chose it, so the ranking can be
 // checked against what a player actually recognises instead of assumed to work.
 const DUMP = (function () { const i = argv.indexOf('--dump'); return i === -1 ? null : argv[i + 1]; })();
+const PENDING = (function () { const i = argv.indexOf('--pending'); return i === -1 ? null : argv[i + 1]; })();
 
 /* ------------------------------------------------------------------ */
 /* Fetching                                                            */
@@ -369,7 +828,7 @@ const BAD_TITLE = new RegExp('\\b(' + [
   // All either multi-word or rare enough as single tokens to be safe against a
   // real Hindi title.
   'refix', 'rework', 'sped up', 'nightcore', 'bass boosted', 'radio edit',
-  'revisited',
+  'revisited', 'edit',   // Tere Siva Jag Mein (Cafe Edit)
   // Bare "mix" as well as the named variants. 'remix' alone missed a whole
   // remix album: Dilwale - Celebration Party Mixes shipped Gerua, Tukur Tukur
   // and Manma Emotion Jaage as "(Desi Hip Hop Mix) [DJ Shilpi Mix]". Measured
@@ -397,17 +856,6 @@ const NON_HINDI = /\b(telugu|tamil|kannada|malayalam|punjabi|bhojpuri|marathi|be
 // otherwise also sweeps up instrumental score cues, which arrive as Soundtrack -
 // Dunki (Original Score) shipped "Escape from Hospital" as a guessable song.
 const FILM_GENRE = /^bollywood$/i;
-
-// The non-film half needs the opposite treatment: Punjabi pop is half the point
-// of seeding Karan Aujla and Guru Randhawa, and the hip-hop artists are tagged
-// every which way, so it names what to REJECT rather than what to keep.
-const NON_FILM_BAD_GENRE =
-  /^(tamil|telugu|kannada|malayalam|marathi|bengali|gujarati|bhojpuri|regional indian|devotional|christian|new age|classical|tv soundtrack)/i;
-
-// The non-film path uses this instead. Punjabi is deliberately absent: a Hindi
-// film soundtrack labelled "Punjabi" is a regional dub and unwanted, but half
-// the point of seeding Karan Aujla is the Punjabi tracks.
-const NON_HINDI_LOOSE = /\b(telugu|tamil|kannada|malayalam|bhojpuri|marathi|bengali)\b/i;
 
 function filmFromAlbum(name) {
   return (name || '')
@@ -475,6 +923,15 @@ function cleanArtists(artistName, composer) {
 
 const artistTokens = s => norm(s).split(' ').filter(w => w.length > 3);
 
+// 2001-05-01 is a placeholder some labels stamp on individual tracks, not a
+// release. It turns up on Jannat 2, Heroine, Blood Money and Rangrezz (2012-13)
+// beside their real dates, and datePerFilm takes the EARLIEST date for a film,
+// so those four were filed as 2001 - which a year cutoff would then delete.
+// Every album in the cache carrying it is from 2007 or later, or is a
+// compilation, so it is read as "no date" and the film's real date wins.
+const PLACEHOLDER_DATE = '2001-05-01';
+const yearOf = d => (!d || d.slice(0, 10) === PLACEHOLDER_DATE ? 0 : Number(d.slice(0, 4)) || 0);
+
 /* ------------------------------------------------------------------ */
 /* Harvest                                                             */
 /* ------------------------------------------------------------------ */
@@ -538,15 +995,11 @@ function looksLikeCompilation(tracks) {
 // cut whose remixer did not bother to label it.
 const REMIX_ALBUM = /\b(mixes|remixes|party mix|club mix|dj mix|remixed)\b/i;
 
-// A title that still names the film it came from, anywhere in the string. Used
-// only on the NON-film path, where its presence proves the song is not a single.
-const SAYS_FROM = /\(\s*from\b|\bfrom\s+["“]/i;
-
 // Albums the film path can read a plausible film name out of, which are not
 // films: label mixtapes, web-series soundtracks, jukeboxes, best-ofs. "T-Series
 // Mixtape Rewind Season 3" shipped a track as though Rewind Season 3 were a
 // movie nobody had heard of - which, in fairness, is true.
-const BAD_ALBUM = /\b(mixtape|jukebox|best of|greatest hits|season \d|top \d+|all songs)\b/i;
+const BAD_ALBUM = /\b(mixtape|jukebox|best of|greatest hits|season \d|top \d+|all songs|series soundtrack|lo-?fi)\b/i;
 
 function candidatesFrom(tracks, composer, albumName, rank, albumTotal) {
   const out = [];
@@ -594,7 +1047,7 @@ function candidatesFrom(tracks, composer, albumName, rank, albumTotal) {
       // Apple's date is the release of THIS pressing, so a reissued 1975 song
       // can carry a 2015 date. Good enough to see the shape of the catalog,
       // not good enough to key anything off.
-      year: Number((t.releaseDate || '').slice(0, 4)) || 0,
+      year: yearOf(t.releaseDate),
       composer,
     });
   }
@@ -655,7 +1108,11 @@ async function harvest() {
     const filmComposer = new Map();
     for (const c of candidates) if (!filmComposer.has(c.nMovie)) filmComposer.set(c.nMovie, c.composer);
     const extra = await harvestSingers(filmComposer);
-    const known = new Set(candidates.map(c => c.nTitle + '|' + c.nMovie));
+    // A trial composer's copy does not count as already having the song: the
+    // singer copy is what the song was reached by before the trial, and select()
+    // needs it to keep that song where it was.
+    const known = new Set(candidates.filter(c => !TRIAL_COMPOSERS.has(c.composer))
+                                    .map(c => c.nTitle + '|' + c.nMovie));
     const fresh = extra.filter(c => !known.has(c.nTitle + '|' + c.nMovie));
     console.log('  ' + extra.length + ' film songs via singers, ' +
                 fresh.length + ' of them new to the pool');
@@ -669,8 +1126,7 @@ async function harvest() {
 /* Singer harvest (film songs, reached by who sang them)               */
 /* ------------------------------------------------------------------ */
 
-// Two requests per singer, and the exact mirror of harvestArtists below: that
-// one throws away every film song it sees, this one keeps nothing else.
+// Two requests per singer, keeping only the film songs in their catalogue.
 //
 // filmComposer maps a film already found by the composer path to its composer,
 // so a song arriving here for a film we already know inherits that composer and
@@ -690,7 +1146,8 @@ async function harvestSingers(filmComposer) {
     const seen = new Set();
     let kept = 0;
 
-    for (let i = 0; i < rows.length && kept < CONFIG.songsPerSinger; i++) {
+    const cap = DEEPER_SINGERS.get(name) || CONFIG.songsPerSinger;
+    for (let i = 0; i < rows.length && kept < cap; i++) {
       const t = rows[i];
       if (!t.previewUrl || !t.trackId) continue;
       if (!t.trackTimeMillis || t.trackTimeMillis < 60000) continue;
@@ -733,7 +1190,7 @@ async function harvestSingers(filmComposer) {
         // same signal albumPct carries on the composer path, so the two score on
         // one scale rather than the singer path arriving unranked.
         albumPct: i / span,
-        year: Number((t.releaseDate || '').slice(0, 4)) || 0,
+        year: yearOf(t.releaseDate),
         composer: filmComposer.get(nMovie) || name,
         seededAs: name,
       });
@@ -741,109 +1198,6 @@ async function harvestSingers(filmComposer) {
     console.log('  ' + name.padEnd(22) + String(kept).padStart(3) + ' film songs');
   }
   return out;
-}
-
-/* ------------------------------------------------------------------ */
-/* Non-film harvest                                                    */
-/* ------------------------------------------------------------------ */
-
-// Two requests per artist, against ~27 for the film path, because there is no
-// album to expand: the film path only walks albums to read the FILM out of the
-// album name, and a single has no film to read. entity=song on an artistId
-// returns the tracks directly.
-//
-// No scoring either. Selection under scarcity is what the whole film pipeline
-// exists for - which 300 of 7,576, and how to keep one era from taking them
-// all. Here the artists are named deliberately and we want their catalogue, so
-// there is nothing to select: take the first songsPerArtist that survive the
-// quality filters, in Apple's own order, which puts an artist's prominent
-// releases first.
-async function harvestArtists() {
-  const out = [];
-  for (const name of ARTISTS.slice(0, ARTIST_LIMIT)) {
-    const id = await artistIdFor(name);
-    if (!id) { console.log('  ' + name.padEnd(22) + ' no artistId, skipped'); continue; }
-
-    const res = await lookup(id, 'song', 200);
-    const seen = new Set();
-    const kept = [];
-
-    for (const t of res.results || []) {
-      if (kept.length >= CONFIG.songsPerArtist) break;
-      if (t.wrapperType !== 'track' || t.kind !== 'song') continue;
-      if (!t.previewUrl || !t.trackId) continue;
-      if (!t.trackTimeMillis || t.trackTimeMillis < 60000) continue;
-
-      // Indie artists put out acoustic cuts, lofi flips and remixes constantly,
-      // so this filter does far more work here than on the film path.
-      const title = tidyTitle(t.trackName);
-      if (!title || BAD_TITLE.test(title)) continue;
-      if (NON_HINDI_LOOSE.test(title) || NON_HINDI_LOOSE.test(t.collectionName || '')) continue;
-      if (NON_FILM_BAD_GENRE.test(t.primaryGenreName || '')) continue;
-      // unpackFrom below is anchored to the END of the name, and tidyTitle
-      // strips trailing decoration only AFTER that test - so
-      //   Garmi (From "Street Dancer 3D") [feat. Neha Kakkar]
-      // failed the film check, then tidied down to something that looked like a
-      // single and shipped with an empty movie. Two identities for one recording
-      // is the bug this whole guard exists to prevent, so catch the phrase
-      // wherever it sits rather than only at the end.
-      if (SAYS_FROM.test(title)) continue;
-
-      // These artists sing on soundtracks too - Raghav Chaitanya is on Animal,
-      // and seeding him pulled Hua Main in here as though it had no film. A
-      // film song reached through the artist path is still a film song: the
-      // film path already has it, correctly labelled, so drop it rather than
-      // shipping the same recording twice under two different identities.
-      if (unpackFrom(t.trackName)) continue;
-      if (/original motion picture|soundtrack|music from/i.test(t.collectionName || '')) continue;
-
-      // The same recording is a single, an album track and a compilation track
-      // under three different trackIds. Keyed by title+artist, not title+film:
-      // there is no film.
-      const artist = cleanArtists(t.artistName, '') || t.artistName;
-      const key = norm(title) + '|' + norm(artist);
-      if (seen.has(key)) continue;
-      seen.add(key);
-
-      kept.push({
-        title: title.trim(),
-        artist,
-        movie: '',                 // no film - this IS the non-film marker
-        trackId: t.trackId,
-        nTitle: norm(title),
-        nMovie: '',
-        year: Number((t.releaseDate || '').slice(0, 4)) || 0,
-        seededAs: name,
-      });
-    }
-
-    out.push(...kept);
-    console.log('  ' + name.padEnd(22) + String(kept.length).padStart(3) + ' songs');
-  }
-  return out;
-}
-
-// A playback singer's own catalogue includes the film songs they sang on, and
-// Apple does not always label those as soundtracks - Hua Main came back through
-// Raghav Chaitanya with no film attached, so it shipped twice: once correctly
-// as ANIMAL and once as a non-film single. Two identities for one recording
-// means guessing the right film scores WRONG, which is worse than missing the
-// song entirely.
-//
-// Same title AND a shared performer means same song. Title alone is not enough
-// and must not be used: AUR's Shayad and Love Aaj Kal's Shayad really are two
-// different songs, and so are Zaeden's Tere Bina and Guru's.
-function dropFilmDuplicates(indie, film) {
-  const byTitle = new Map();
-  for (const f of film) {
-    if (!byTitle.has(f.nTitle)) byTitle.set(f.nTitle, new Set());
-    f.artist.split(/,\s*/).forEach(a => byTitle.get(f.nTitle).add(norm(a)));
-  }
-  return indie.filter(s => {
-    const performers = byTitle.get(s.nTitle);
-    if (!performers) return true;
-    return !s.artist.split(/,\s*/).some(a => performers.has(norm(a)));
-  });
 }
 
 /* ------------------------------------------------------------------ */
@@ -920,22 +1274,68 @@ function isRejected(s) {
   return rejectedKeys.has(s.nTitle + '|' + s.nMovie);
 }
 
+const knownKeys = new Set();
+function isKnown(s) {
+  if (!knownKeys.size) KNOWN.forEach(pair => knownKeys.add(norm(pair[0]) + '|' + norm(pair[1])));
+  return knownKeys.has(s.nTitle + '|' + s.nMovie);
+}
+
 function select(candidates, signals) {
-  // Dropped before scoring rather than after selection, so the era quota refills
-  // with the next song down instead of the catalog simply shrinking.
-  candidates = candidates.filter(c => !isRejected(c));
+  // Rejected songs stay in the ranking. When one comes up in a pass it spends
+  // its film's slot and ships nothing; the ERA quota does not count it, so the
+  // era refills with the next song down instead of the catalog shrinking.
+  //
+  // The film slot is spent because otherwise the refill came from the SAME
+  // film: rejecting Ram Siya Ram promoted Tu Hai Sheetal Dhaara - more of a film
+  // the player had just shown they did not know. And it is spent only where the
+  // song would actually have been picked. Charging every rejection against the
+  // first three slots up front meant 119 rejected 4th and 5th songs evicted 41
+  // approved ones - Ankahee and Shikayatein lost Lootera's slots to Monta Re
+  // and Zinda, songs that were never in the running for them.
   datePerFilm(candidates);
+
+  // Which copies came from a trial source. A singer-path copy belongs to its
+  // singer, whoever composed the film: Beete Lamhein reached through KK is not a
+  // trial song just because Mithoon scored The Train.
+  const onTrial = c => c.seededAs ? TRIAL_SINGERS.has(c.seededAs) : TRIAL_COMPOSERS.has(c.composer);
+
+  // A song is only a TRIAL song if nothing but a trial source reached it. Once
+  // Mithoon was seeded, Beete Lamhein, Bas Ek Pal and Chal Tere Ishq Mein - all
+  // already in the catalog via their singers - became "Mithoon films" and were
+  // held to the trial bar, which is exactly the displacement trial exists to
+  // prevent.
+  const reachedOtherwise = new Set(candidates.filter(c => !onTrial(c))
+                                             .map(c => c.nTitle + '|' + c.nMovie));
+  const isTrial = s => !reachedOtherwise.has(s.nTitle + '|' + s.nMovie);
 
   // One entry per song. Reissues and deluxe editions carry the same recording
   // under different trackIds; the earliest album wins, which is the original.
+  // Except that a trial copy never replaces a copy found some other way: that
+  // one carries the score the song had before the trial began, and swapping it
+  // for the trial copy's score reshuffled the quotas and pushed vetted songs out.
   const byIdentity = new Map();
   for (const c of candidates) {
     const key = c.nTitle + '|' + c.nMovie;
     const kept = byIdentity.get(key);
-    if (!kept || c.albumRank < kept.albumRank) byIdentity.set(key, c);
+    if (!kept) { byIdentity.set(key, c); continue; }
+    if (onTrial(c) !== onTrial(kept)) { if (onTrial(kept)) byIdentity.set(key, c); continue; }
+    if (c.albumRank < kept.albumRank) byIdentity.set(key, c);
   }
 
-  const scored = [...byIdentity.values()].map(c => {
+  // Two versions of one song on one soundtrack, each named by its singer -
+  // Jaan 'nisaar (Arijit) and Jaan 'nisaar (Asees). candidatesFrom drops a
+  // bracketed title only when the plain one is ALSO on the album, and here
+  // neither is plain. Same film and same title once the brackets are off means
+  // the same song; the lower album rank wins, as above. Ala Barfi (Kaju Barfi)
+  // is safe: no other Ala Barfi shares its film.
+  const byStem = new Map();
+  for (const c of byIdentity.values()) {
+    const key = norm(stripTrailingParen(c.title)) + '|' + c.nMovie;
+    const kept = byStem.get(key);
+    if (!kept || c.albumRank < kept.albumRank) byStem.set(key, c);
+  }
+
+  const scored = [...byStem.values()].map(c => {
     const pop = popularity(c, signals);
     return Object.assign(c, {
       // POSITION is the load-bearing signal, not the release-shaped ones.
@@ -978,24 +1378,78 @@ function select(candidates, signals) {
   // is per era, so Pritam can appear across four of them without owning any one.
   const perFilm = new Map();
   const chosen = [];
+  // Every song a pass has dealt with - shipped, or rejected and spent - so a
+  // later pass cannot pick it up a second time.
+  const handled = new Set();
   for (const era of ERAS) {
     const perComposer = new Map();
     let taken = 0;
     for (const s of scored) {
       if (taken >= era.quota) break;
       if (s.year < era.from || s.year > era.to) continue;
+      if (isTrial(s)) continue;   // added on top, below
       const f = perFilm.get(s.nMovie) || 0;
       if (f >= CONFIG.songsPerFilm) continue;
+      if (isRejected(s)) { perFilm.set(s.nMovie, f + 1); handled.add(s); continue; }
       const c = perComposer.get(s.composer) || 0;
       if (c >= CONFIG.songsPerComposer) continue;
       perFilm.set(s.nMovie, f + 1);
       perComposer.set(s.composer, c + 1);
       s.era = era.name;
-      chosen.push(s);
+      chosen.push(s); handled.add(s);
       taken++;
     }
     era.filled = taken;
+    // The weakest score that made it in. The additive passes below use it as
+    // the bar a song has to clear to join WITHOUT taking anyone's slot.
+    era.floor = taken ? Math.min(...chosen.filter(s => s.era === era.name).map(s => s.score)) : Infinity;
   }
+
+  const eraOf = s => ERAS.find(e => e.quota > 0 && s.year >= e.from && s.year <= e.to);
+
+  // The two passes below add songs ON TOP of the quotas, and neither may ship
+  // a song the player has not vetted. The first batch they produced shipped
+  // unvetted and went 42 of 161 (26%) against ~69% for the quota catalog -
+  // and nothing the harvest knows separated the hits from the misses: score,
+  // track number and era all read flat. So an additive song ships only once it
+  // is on KNOWN. Everything else it finds is PENDING - the next blind batch -
+  // and a miss goes on REJECTED, where it still spends its film's slot.
+  const pending = [];
+  function offer(s, era, addedBy) {
+    handled.add(s);
+    if (isRejected(s)) return;          // slot spent by the caller, nothing ships
+    s.era = era.name; s.addedBy = addedBy;
+    if (isKnown(s)) chosen.push(s); else pending.push(s);
+  }
+
+  // TRIAL sources - composers and singers - are held out of the quota fill
+  // above, so trying one cannot displace a song a player has already checked.
+  // Their songs are offered here, and only when they score at least as well as
+  // the weakest song their era already holds; the floor does not predict
+  // recognition, but it keeps each batch to a markable size.
+  for (const s of scored) {
+    if (!isTrial(s) || handled.has(s)) continue;
+    const era = eraOf(s);
+    if (!era || (s.score < era.floor && !DEEPER_SINGERS.has(s.seededAs))) continue;
+    const f = perFilm.get(s.nMovie) || 0;
+    if (f >= CONFIG.songsPerFilm) continue;
+    perFilm.set(s.nMovie, f + 1);
+    offer(s, era, 'trial');
+  }
+
+  // Films the player has shown they know may carry more than songsPerFilm. The
+  // theory was that a known song means they saw the film, so its other songs
+  // are safe. Measured, it is not: 30 of 107 (28%), no better than the trial
+  // composers. Kept as a source of pending songs, gated like everything else.
+  const knownFilms = new Set(KNOWN.map(p => norm(p[1])));
+  for (const s of scored) {
+    if (!knownFilms.has(s.nMovie) || handled.has(s) || !eraOf(s)) continue;
+    const f = perFilm.get(s.nMovie) || 0;
+    if (f >= CONFIG.songsPerKnownFilm) continue;
+    perFilm.set(s.nMovie, f + 1);
+    offer(s, eraOf(s), 'known-film');
+  }
+  chosen.pending = pending;
   return chosen;
 }
 
@@ -1073,39 +1527,32 @@ function write(seeds, harvested) {
     seen.add(key); seenIds.add(s.trackId);
     kept.push(s);
   }
-  // The non-film half. Appended after the film songs rather than mixed in, so
-  // the generated block reads film-then-not and a diff stays legible.
-  let indie = [];
-  if (!FILM_ONLY) {
-    console.log('\n--- non-film artists ---');
-    const raw = await harvestArtists();
-    const deduped = dropFilmDuplicates(raw, seeds.concat(kept));
-    indie = deduped.filter(s => {
-      if (isRejected(s)) return false;
-      const key = s.nTitle + '|' + s.nMovie;
-      if (seen.has(key) || seenIds.has(s.trackId)) return false;
-      seen.add(key); seenIds.add(s.trackId);
-      return true;
-    });
-    console.log('  ' + indie.length + ' non-film songs from ' +
-                new Set(indie.map(s => s.seededAs)).size + ' artists' +
-                (raw.length - deduped.length
-                  ? ' (' + (raw.length - deduped.length) + ' dropped as film songs in disguise)' : ''));
+  // Songs an additive source found that the player has not vetted yet. They are
+  // not in the catalog; they are the next blind batch. Seeds are already in, so
+  // they are not asked about - Kabira turned up here via a trial singer.
+  chosen.pending = chosen.pending.filter(s => !seen.has(s.nTitle + '|' + s.nMovie) && !seenIds.has(s.trackId));
+  console.log('\n  ' + chosen.pending.length + ' songs pending a blind batch (not shipped)' +
+              (PENDING ? ', written to ' + PENDING : ' - pass --pending FILE to list them'));
+  if (PENDING) {
+    fs.writeFileSync(PENDING, JSON.stringify(chosen.pending.map(s => ({
+      title: s.title, movie: s.movie, trackId: s.trackId, year: s.year, score: s.score,
+      composer: s.composer, seededAs: s.seededAs || '', addedBy: s.addedBy,
+    })), null, 1));
   }
 
   if (DUMP) {
     fs.writeFileSync(DUMP, JSON.stringify(chosen.map(s => ({
       title: s.title, movie: s.movie, trackId: s.trackId, score: s.score,
       year: s.year, composer: s.composer, trackNumber: s.trackNumber,
-      albumPct: Math.round(s.albumPct * 100) / 100,
+      albumPct: Math.round(s.albumPct * 100) / 100, addedBy: s.addedBy || "", seededAs: s.seededAs || "",
     })), null, 1));
     console.log('  dumped ' + chosen.length + ' scored songs to ' + DUMP);
   }
 
-  const merged = seeds.concat(kept, indie);
+  const merged = seeds.concat(kept);
 
   console.log('\n  ' + merged.length + ' songs (' + seeds.length + ' seeds + ' +
-              kept.length + ' film + ' + indie.length + ' non-film)');
+              kept.length + ' harvested)');
   console.log('  ' + chosen.filter(s => s.trackNumber <= 3).length + ' of ' + chosen.length +
               ' chosen open their soundtrack; ' +
               chosen.filter(s => s.pop.bestOf).length + ' are on a best-of');
@@ -1134,10 +1581,7 @@ function write(seeds, harvested) {
     return [...m.entries()].sort((a, b) => String(a[0]).localeCompare(String(b[0])));
   };
 
-  // Both halves, because what a player actually meets is the whole pool - and
-  // the non-film half is almost entirely recent, which shifts the real balance
-  // well past what the film quotas alone suggest.
-  const shipped = chosen.concat(indie);
+  const shipped = chosen;
   console.log('\n  by decade, whole catalog (earliest pressing seen, so classics read late):');
   bucket(shipped, s => (s.year ? Math.floor(s.year / 10) * 10 + 's' : 'unknown'))
     .forEach(([d, n]) => console.log('    ' + String(d).padEnd(9) +
@@ -1159,9 +1603,9 @@ function write(seeds, harvested) {
               (dupeKeys.length ? ': ' + dupeKeys.slice(0, 8).join(', ') : ''));
 
   if (DRY) { console.log('\n  --dry, nothing written\n'); return; }
-  write(seeds, kept.concat(indie));
-  console.log('\n  wrote ' + seeds.length + ' seeds + ' + kept.length + ' film + ' +
-              indie.length + ' non-film to src/template.html\n');
+  write(seeds, kept);
+  console.log('\n  wrote ' + seeds.length + ' seeds + ' + kept.length +
+              ' harvested songs to src/template.html\n');
 })().catch(e => {
   console.error(e);
   process.exit(1);

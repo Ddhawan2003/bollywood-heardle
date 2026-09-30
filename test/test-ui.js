@@ -132,18 +132,34 @@ function createHarness(fixture, respond, store, hash) {
 
   // A browser always has these, so the sandbox does too - rooms live entirely in
   // the URL and there is nothing to test without one.
-  sandbox.location = {
-    origin: 'https://filmi.test', pathname: '/', search: '',
-    hash: hash ? '#' + hash : '',
-  };
+  //
+  // The hash behaves as a browser's does: assigning a DIFFERENT value fires
+  // hashchange, asynchronously, and assigning the value it already has fires
+  // nothing. A no-op stand-in hid a real bug - starting a room writes its code
+  // into the hash, and the app's own hashchange listener then entered the room
+  // a second time. replaceState changes the URL without an event, as it should.
+  const listeners = {};
+  let currentHash = hash ? '#' + hash : '';
+  sandbox.location = { origin: 'https://filmi.test', pathname: '/', search: '' };
+  Object.defineProperty(sandbox.location, 'hash', {
+    get() { return currentHash; },
+    set(v) {
+      const next = !v ? '' : (String(v)[0] === '#' ? String(v) : '#' + v);
+      if (next === currentHash) return;
+      currentHash = next;
+      setTimeout(() => (listeners.hashchange || []).slice().forEach(fn => fn()), 0);
+    },
+  });
   sandbox.history = {
-    replaceState(_state, _title, url) { sandbox.location.hash = ''; sandbox.location.href = url; },
+    replaceState(_state, _title, url) { currentHash = ''; sandbox.location.href = url; },
   };
   sandbox.navigator = {
     clipboard: { writeText(v) { clip.push(String(v)); return Promise.resolve(); } },
   };
-  sandbox.addEventListener = () => {};
-  sandbox.removeEventListener = () => {};
+  sandbox.addEventListener = (type, fn) => { (listeners[type] = listeners[type] || []).push(fn); };
+  sandbox.removeEventListener = (type, fn) => {
+    listeners[type] = (listeners[type] || []).filter(f => f !== fn);
+  };
 
   const ctx = vm.createContext(sandbox);
 
@@ -197,6 +213,8 @@ function createHarness(fixture, respond, store, hash) {
     urls,
     clip,
     hash: () => sandbox.location.hash,
+    // What the browser's Back button does to a page whose history is hashes.
+    navigateHash: v => { sandbox.location.hash = v; },
     audio: () => audioEl,
     render, flush, nodes, find,
     byText: t => find(n => n.type === 'button' && textOf(n).includes(t)),
@@ -931,11 +949,78 @@ async function roomScenario() {
   ok('the start screen offers to make one', !!out.byText('Start a room'));
 }
 
+/* ================================================================== */
+/* Scenario 5 - regressions found in review                            */
+/* ================================================================== */
+
+async function regressionScenario() {
+  console.log('\n--- starting a room enters it once ---');
+  // Entering a room writes its code into the hash; the page's own hashchange
+  // listener used to take that as a pasted link and enter the room again - a
+  // second batch request and a restarted round one.
+  const fresh = createHarness(ROOM_POOL, roomReply, fakeStore());
+  fresh.render();
+  await wait(30);
+  fresh.flush();
+  const before = fresh.urls.length;       // the start screen's own one-song prefetch
+  fresh.click(fresh.byText('Start a room'), 'start a room');
+  await wait(60);
+  fresh.flush();
+  const roomLookups = fresh.urls.slice(before).filter(u => u.includes('/lookup')).length;
+  ok('the room opened', !!fresh.byClass('transport'));
+  ok('and its code is in the URL', /^#room=/.test(fresh.hash()), fresh.hash());
+  ok('it resolved its songs in one request, not two', roomLookups === 1, roomLookups + ' lookups');
+
+  console.log('\n--- Back out of a room stops the music ---');
+  const back = createHarness(ROOM_POOL, roomReply, fakeStore(), 'room=k7f2qm');
+  back.render();
+  await wait(60);
+  back.flush();
+  back.click(back.byClass('play'), 'play the snippet');
+  await wait(5);
+  back.flush();
+  ok('the snippet is playing', back.audio().playing);
+  back.navigateHash('');                  // the browser's Back button
+  await wait(10);
+  back.flush();
+  ok('Back lands on the start screen', !!back.byText('Endless / Random'));
+  ok('and the audio stopped with it', !back.audio().playing);
+
+  console.log('\n--- "Link copied" belongs to one tap, not the session ---');
+  const endless = createHarness(COLLIDING, () => null);
+  endless.render();
+  await wait(30);
+  endless.flush();
+  endless.click(endless.byText('Endless / Random'), 'start');
+  await wait(10);
+  endless.flush();
+  endless.click(endless.byText('Like the game?'), 'share mid-round');
+  await wait(10);
+  endless.flush();
+  ok('the share confirms it copied', !!endless.byText('Link copied'));
+  endless.click(endless.byText('Give up and show me the song'), 'give up');
+  endless.click(endless.byText('Next song'), 'next song');
+  await wait(10);
+  endless.flush();
+  ok('the next round offers the share again rather than claiming it was done',
+     !endless.byText('Link copied') && !!endless.byText('Like the game?'));
+
+  console.log('\n--- the offline notice names the file that exists ---');
+  const dark = createHarness(COLLIDING, () => null);
+  dark.render();
+  await wait(30);
+  dark.flush();
+  const notice = textOf(dark.byClass('notice'));
+  ok('it points at index.html', notice.includes('index.html'), notice);
+  ok('not a filename the build no longer produces', !notice.includes('bollywood-heardle.html'), notice);
+}
+
 (async function main() {
   await blockedScenario();
   await onlineScenario();
   await scoreScenario();
   await roomScenario();
+  await regressionScenario();
   console.log('\n================  ' + pass + ' passed, ' + fail + ' failed  ================\n');
   process.exit(fail ? 1 : 0);
 })().catch(e => {
