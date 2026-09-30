@@ -33,3 +33,10 @@ build/.harvest-cache/
 
 # Throwaway instrumented copies used for screenshots
 probe.html
+
+# The vetting queue build/harvest.js writes for build/vet.js. Derived; rebuilt
+# every run. (build/vetting.json and build/additions.json ARE committed: they
+# are the player's answers.)
+build/.vet-queue.json
+build/.vet-extra.json
+build/.vet-priority.json

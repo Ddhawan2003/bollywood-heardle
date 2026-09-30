@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Filmi — vetting</title>
+<style>
+  :root {
+    --ink: #0f0d0b; --ink-2: #1a1714; --ink-3: #25211c; --line: #3a332b;
+    --paper: #f3ece0; --muted: #a39887; --saffron: #f2a93b; --yes: #58b36c; --no: #d4604c;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; background: var(--ink); color: var(--paper);
+    font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+    display: flex; justify-content: center; padding: 28px 16px 40px;
+  }
+  main { width: 100%; max-width: 440px; }
+  header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 18px; }
+  h1 { margin: 0; font-size: 22px; letter-spacing: .02em; }
+  h1 em { color: var(--saffron); font-style: normal; }
+  .count { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .bar { height: 4px; background: var(--ink-3); border-radius: 2px; overflow: hidden; margin-bottom: 22px; }
+  .bar i { display: block; height: 100%; background: var(--saffron); width: 0; transition: width .2s; }
+  .card { background: var(--ink-2); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .art { aspect-ratio: 1; background: var(--ink-3) center/cover no-repeat; position: relative; }
+  .art .state {
+    position: absolute; left: 12px; bottom: 12px; padding: 4px 10px; border-radius: 99px;
+    background: rgba(15,13,11,.8); color: var(--muted); font-size: 12px;
+  }
+  .meta { padding: 16px 18px 18px; }
+  .title { font-size: 21px; font-weight: 650; margin: 0 0 2px; }
+  .film { color: var(--saffron); margin: 0 0 2px; }
+  .artist { color: var(--muted); font-size: 13px; margin: 0; }
+  .acts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+  button {
+    font: inherit; cursor: pointer; border-radius: 10px; padding: 14px 10px;
+    border: 1px solid var(--line); background: var(--ink-3); color: var(--paper);
+  }
+  button:disabled { opacity: .4; cursor: default; }
+  .no { border-color: var(--no); color: var(--no); }
+  .yes { border-color: var(--yes); background: var(--yes); color: var(--ink); font-weight: 650; }
+  kbd { font: 12px ui-monospace, monospace; opacity: .7; margin-left: 6px; }
+  .minor { display: flex; justify-content: space-between; margin-top: 10px; }
+  .minor button { padding: 8px 12px; font-size: 13px; background: none; }
+  .note { color: var(--muted); font-size: 13px; margin: 14px 2px 0; }
+  .center { text-align: center; padding: 34px 20px; }
+  .center p { color: var(--muted); }
+  .start { background: var(--saffron); border-color: var(--saffron); color: var(--ink); font-weight: 650; padding: 14px 30px; }
+  .err { color: var(--no); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Fil<em>mi</em> · do you know it?</h1>
+    <span class="count" id="count"></span>
+  </header>
+  <div class="bar"><i id="bar"></i></div>
+  <div id="app" class="card center"><p>Loading the queue…</p></div>
+  <p class="note">Answers save as you go — close the tab any time and it picks up where you stopped.
+    Judge by the sound, not the name: plenty of songs are familiar long before their title is.</p>
+</main>
+<audio id="audio" preload="auto"></audio>
+<script>
+(function () {
+  var app = document.getElementById('app');
+  var audio = document.getElementById('audio');
+  var queue = [], i = 0, total = 0, known = 0, unknown = 0, started = false, busy = false;
+  var tracks = {};          // trackId -> { previewUrl, artwork } | null
+  var asked = {};           // trackIds already requested
+
+  function esc(s) { return String(s || '').replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  // JSONP, exactly as the game does it: Apple sends no CORS header.
+  var seq = 0;
+  function jsonp(url) {
+    return new Promise(function (resolve, reject) {
+      var cb = '__vet' + (++seq), s = document.createElement('script');
+      var t = setTimeout(function () { done(); reject(new Error('timeout')); }, 12000);
+      function done() { clearTimeout(t); delete window[cb]; s.remove(); }
+      window[cb] = function (d) { done(); resolve(d); };
+      s.onerror = function () { done(); reject(new Error('blocked')); };
+      s.src = url + '&callback=' + cb;
+      document.head.appendChild(s);
+    });
+  }
+
+  // Previews for the next 50 songs in one request, well before they are needed.
+  function prefetch() {
+    var ids = queue.slice(i, i + 50).map(function (q) { return q.trackId; })
+      .filter(function (id) { return !asked[id]; });
+    if (!ids.length) return Promise.resolve();
+    ids.forEach(function (id) { asked[id] = true; });
+    return jsonp('https://itunes.apple.com/lookup?id=' + ids.join(',') + '&country=IN').then(function (d) {
+      ids.forEach(function (id) { tracks[id] = null; });
+      (d.results || []).forEach(function (r) {
+        if (r.previewUrl) tracks[r.trackId] = {
+          previewUrl: r.previewUrl,
+          artwork: r.artworkUrl100 ? r.artworkUrl100.replace('100x100', '600x600') : ''
+        };
+      });
+    }).catch(function () { ids.forEach(function (id) { delete asked[id]; }); });
+  }
+
+  function progress() {
+    var answered = known + unknown;
+    document.getElementById('count').textContent =
+      (queue.length - i) + ' to go · ' + known + ' known · ' + unknown + ' not';
+    document.getElementById('bar').style.width = (total ? (100 * (total - (queue.length - i)) / total) : 0) + '%';
+    return answered;
+  }
+
+  function render() {
+    progress();
+    var q = queue[i];
+    if (!started) {
+      app.className = 'card center';
+      app.innerHTML = '<p><b>' + queue.length + '</b> songs to go.</p>' +
+        '<p>Each one plays its preview. <b>→</b> if you know it, <b>←</b> if you don’t. ' +
+        '<b>Space</b> replays, <b>Backspace</b> undoes.</p>' +
+        '<button class="start" id="go">Start</button>';
+      document.getElementById('go').onclick = function () { started = true; render(); };
+      return;
+    }
+    if (!q) {
+      audio.pause();
+      app.className = 'card center';
+      app.innerHTML = '<p><b>All done.</b></p><p>Tell Claude, or run <code>node build/harvest.js</code> to fold the answers in.</p>';
+      return;
+    }
+    app.className = 'card';
+    var t = tracks[q.trackId];
+    app.innerHTML =
+      '<div class="art" style="' + (t && t.artwork ? "background-image:url('" + esc(t.artwork) + "')" : '') + '">' +
+        '<span class="state">' + (t === undefined ? 'loading preview…' : t ? 'playing' : 'no preview — judge by the name') + '</span></div>' +
+      '<div class="meta">' +
+        '<p class="title">' + esc(q.title) + '</p>' +
+        '<p class="film">' + esc(q.movie) + '</p>' +
+        '<p class="artist">' + esc(q.artist) + '</p>' +
+        '<div class="acts">' +
+          '<button class="no" id="no">Don’t know<kbd>←</kbd></button>' +
+          '<button class="yes" id="yes">Know it<kbd>→</kbd></button>' +
+        '</div>' +
+        '<div class="minor">' +
+          '<button id="undo"' + (i ? '' : ' disabled') + '>Undo<kbd>⌫</kbd></button>' +
+          '<button id="replay"' + (t ? '' : ' disabled') + '>Replay<kbd>space</kbd></button>' +
+        '</div>' +
+      '</div>';
+    document.getElementById('no').onclick = function () { answer(false); };
+    document.getElementById('yes').onclick = function () { answer(true); };
+    document.getElementById('undo').onclick = undo;
+    document.getElementById('replay').onclick = play;
+    if (t) play();
+    else if (t === undefined) prefetch().then(function () { if (queue[i] === q) render(); });
+  }
+
+  function play() {
+    var t = tracks[(queue[i] || {}).trackId];
+    if (!t) return;
+    if (audio.src !== t.previewUrl) audio.src = t.previewUrl;
+    try { audio.currentTime = 0; } catch (e) {}
+    audio.play().catch(function () {});
+  }
+
+  function answer(isKnown) {
+    var q = queue[i];
+    if (!q || busy) return;
+    busy = true;
+    fetch('/answer', { method: 'POST', body: JSON.stringify({ title: q.title, movie: q.movie, known: isKnown }) })
+      .then(function (r) { if (!r.ok) throw new Error('save failed'); })
+      .then(function () {
+        if (isKnown) known++; else unknown++;
+        i++;
+        busy = false;
+        if (queue.length - i < 30) prefetch();
+        render();
+      })
+      .catch(function (e) {
+        busy = false;
+        app.insertAdjacentHTML('beforeend', '<p class="note err">Could not save: ' + esc(e.message) + ' — is build/vet.js still running?</p>');
+      });
+  }
+
+  function undo() {
+    if (!i || busy) return;
+    busy = true;
+    fetch('/undo', { method: 'POST' }).then(function (r) { return r.json(); }).then(function (d) {
+      busy = false;
+      if (!d.undone) return;
+      if (d.undone.known) known--; else unknown--;
+      i--;
+      render();
+    }).catch(function () { busy = false; });
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if (!started) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); started = true; render(); } return; }
+    if (e.key === 'ArrowRight' || e.key === 'k') { e.preventDefault(); answer(true); }
+    else if (e.key === 'ArrowLeft' || e.key === 'j') { e.preventDefault(); answer(false); }
+    else if (e.key === ' ') { e.preventDefault(); play(); }
+    else if (e.key === 'Backspace' || e.key === 'u') { e.preventDefault(); undo(); }
+  });
+
+  fetch('/queue').then(function (r) {
+    if (!r.ok) return r.text().then(function (t) { throw new Error(t); });
+    return r.json();
+  }).then(function (d) {
+    queue = d.queue; total = queue.length; known = d.known; unknown = d.unknown;
+    prefetch();
+    render();
+  }).catch(function (e) {
+    app.innerHTML = '<p class="err">' + esc(e.message) + '</p>';
+  });
+})();
+</script>
+</body>
+</html>

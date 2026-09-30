@@ -160,6 +160,32 @@ releases. One date is ignored outright: some labels stamp tracks with a
 placeholder **2001-05-01**, which under the earliest-date rule filed *Jannat 2*,
 *Heroine*, *Blood Money* and *Rangrezz* (2012–13) as 2001.
 
+### Vetting: the player decides what ships
+
+Nothing the harvest scores predicts whether a player knows a song — score,
+track number and era were all measured and all read flat — so the catalog is
+curated by asking. Every answer lives in `build/vetting.json` (plus the early
+chat-era `KNOWN` / `REJECTED` lists in `harvest.js`), and the harvest treats
+it as ground truth:
+
+- a **known** song is guaranteed a place;
+- an **unknown** song is removed, and its slot is *not* refilled — refills
+  were never vetted and measured badly every time;
+- songs a new source finds (trial composers and singers, extra songs from
+  films the player knows) stay *pending* until answered.
+
+```
+node build/harvest.js                 rebuild the catalog and the vetting queue
+node build/vet.js                     answer the queue: preview plays, → knows, ← doesn't
+node build/spotify.js Liked_Songs.csv mark what Spotify says you know; add film
+                                      songs from it that no harvest path reaches
+```
+
+`spotify.js` also reads Spotify's *extended streaming history*
+(`Streaming_History_Audio_*.json`): 3+ plays of 30s+ count as known, 5+ adds a
+missing film song, 1–2 plays go to the front of the vetting queue. It can only
+ever say *known* — not having played a song says nothing.
+
 ### No non-film songs
 
 There used to be a second harvest path for indie, hip-hop and pop singles from

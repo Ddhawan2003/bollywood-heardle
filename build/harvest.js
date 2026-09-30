@@ -468,6 +468,36 @@ const REJECTED = [
   ["Akh Ladiye", "Neal ‘n’ Nikki"],
   ["Kahan Shuru Kahan Khatam", "Kahan Shuru Kahan Khatam"],
   ["Rangtaari", "Loveyatri"],
+
+  // Eighth sample, 2026-09-30: 100 catalog songs never asked about, drawn the
+  // way the app deals. 73 known; these are the 27 that were not.
+  ["Tum Hi Aana", "Marjaavaan"],
+  ["Tum Par Hum Hai Atke", "Pagalpanti"],
+  ["Tere Bina", "Haseena Parkar"],
+  ["Rail Gaddi", "Tutak Tutak Tutiya"],
+  ["Arey Pyaar Kar Le", "Shubh Mangal Zyada Saavdhan"],
+  ["Purza", "Akira"],
+  ["You and Me", "Befikre"],
+  ["Preet Re", "Dhadak 2"],
+  ["Pyaar Toh Tha", "Bala"],
+  ["Tera Mera Milna", "Aap Kaa Surroor"],
+  ["Pyaar Tenu Karda Gabru", "Shubh Mangal Zyada Saavdhan"],
+  ["Ice Cream", "The Xpose"],
+  ["Laila", "Shootout At Wadala"],
+  ["Lut Jaaon Lut Jaaon", "Karzzzz"],
+  ["Mohenjo Mohenjo", "Mohenjo Daro"],
+  ["Tu Isaq Mera", "Hate Story 3"],
+  ["Radio", "Tubelight"],
+  ["Ishtehaar", "Welcome to NewYork"],
+  ["Hairat", "Anjaana Anjaani"],
+  ["Musafir", "Sweetiee Weds NRI"],
+  ["Allah Meherbaan", "Ghanchakkar"],
+  ["Adhura Lafz", "Baazaar"],
+  ["Gali Gali", "KGF Chapter 1"],
+  ["Kooke Kawn", "Mom"],
+  ["Todun Taak", "Toofaan"],
+  ["Bad Boy", "Saaho"],
+  ["Teen Kabootar", "Lucknow Central"],
 ];
 
 // The other half of the same samples: songs the player DID name. A known song
@@ -633,6 +663,81 @@ const KNOWN = [
   ["Alcoholic", "The Shaukeens"],
   ["Anarkali Disco Chali", "Housefull 2"],
   ["Hud Hud Dabangg", "Dabangg"],
+
+  // Eighth sample, 2026-09-30: 73 of 100 never-asked catalog songs.
+  ["Dard - E - Disco", "Om Shanti Om"],
+  ["Afeemi", "Meri Pyaari Bindu"],
+  ["Jaaneman Aah", "Dishoom"],
+  ["Manwa Laage", "Happy New Year"],
+  ["Do U Know", "Khel Khel Mein"],
+  ["Ik Onkar", "Rang De Basanti"],
+  ["Ayaashi", "Badmaash Company"],
+  ["Raazi", "Raazi"],
+  ["Bekhayali", "Kabir Singh"],
+  ["Prem Ratan Dhan Payo", "Prem Ratan Dhan Payo"],
+  ["Mat Aazma Re", "Murder 3"],
+  ["Hardum Humdum", "Ludo"],
+  ["Tere Sang Yaara", "Rustom"],
+  ["Coca Cola", "Luka Chuppi"],
+  ["Aaj Ki Raat", "Stree 2"],
+  ["Rang Laal", "Force 2"],
+  ["Tere Vaaste", "Zara Hatke Zara Bachke"],
+  ["Humsafar", "Saiyaara"],
+  ["Uff", "Bang Bang"],
+  ["O Bedardeya", "Tu Jhoothi Main Makkaar"],
+  ["Tere Rang", "Atrangi Re"],
+  ["Hard Hard", "Batti Gul Meter Chalu"],
+  ["Dance Basanti", "Ungli"],
+  ["Khoon Choos Le", "Go Goa Gone"],
+  ["Sunny Sunny", "Yaariyan"],
+  ["Gal Mitthi Mitthi", "Aisha"],
+  ["Maine Tujhko Dekha", "Golmaal Again!!!"],
+  ["Mere Liye Tum Kaafi Ho", "Shubh Mangal Zyada Saavdhan"],
+  ["Ishq Da Chehra", "BORDER 2"],
+  ["Sher Khul Gaye", "Fighter"],
+  ["Chahun Main Ya Naa", "Aashiqui 2"],
+  ["Satranga", "ANIMAL"],
+  ["Badumbaaa", "102 Not Out"],
+  ["Tumbe Te Zumba", "Chandigarh Kare Aashiqui"],
+  ["Soorma Anthem", "Soorma"],
+  ["Jugjugg Jeeyo", "Jugjugg Jeeyo"],
+  ["Sultan", "Sultan"],
+  ["Locha-E-Ulfat", "2 States"],
+  ["Deva Deva", "Brahmastra"],
+  ["Halka Halka", "Fanney Khan"],
+  ["Lazy Lad", "Ghanchakkar"],
+  ["Roke Na Ruke Naina", "Badrinath Ki Dulhania"],
+  ["Kahani", "Laal Singh Chaddha"],
+  ["Sitaare Zameen Par Title Track", "Sitaare Zameen Par"],
+  ["Hai Junoon", "New York"],
+  ["Brothers Anthem", "Brothers"],
+  ["Jingle Jingle", "Badmaash Company"],
+  ["Nazar Na Lag Jaaye", "Stree"],
+  ["Outfit", "Ujda Chaman"],
+  ["Swag Se Swagat", "Tiger Zinda Hai"],
+  ["Sau Tarah Ke", "Dishoom"],
+  ["Kudiya Shehar Diyan", "Poster Boys"],
+  ["Ye Jawaani Teri", "Meri Pyaari Bindu"],
+  ["Don’T Control Us", "F.U. (Friendship Unlimited)"],
+  ["Radha", "Jab Harry Met Sejal"],
+  ["Bijli", "Govinda Naam Mera"],
+  ["Drama Queen", "Hasee Toh Phasee"],
+  ["Hauli Hauli", "Khel Khel Mein"],
+  ["Golmaal Title Track", "Golmaal Again!!!"],
+  ["Desi Look", "Ek Paheli Leela"],
+  ["Bachche Ki Jaan", "102 Not Out"],
+  ["Dance Ka Bhoot", "Brahmastra"],
+  ["Shukran Allah", "Kurbaan"],
+  ["Mummy Nu Pasand", "Jai Mummy Di"],
+  ["Hamari Adhuri Kahani", "Hamari Adhuri Kahani"],
+  ["Firecracker", "Jayeshbhai Jordaar"],
+  ["Hosanna", "Ekk Deewana Tha"],
+  ["Yaadon Ki Almari", "Helicopter Eela"],
+  ["Character Dheela", "Ready"],
+  ["Zara Sa", "Jannat"],
+  ["Darasal", "Raabta"],
+  ["Dil Dhadakne Do", "Zindagi Na Milegi Dobara"],
+  ["In Dino", "Life In a Metro"],
 ];
 
 const CONFIG = {
@@ -1266,24 +1371,39 @@ function datePerFilm(candidates) {
 const decadeOf = s => (s.year ? Math.floor(s.year / 10) * 10 : 0);
 
 // Built on first use so it does not depend on where norm() sits in this file.
-const rejectedKeys = new Set();
-function isRejected(s) {
-  if (!rejectedKeys.size) {
-    REJECTED.forEach(pair => rejectedKeys.add(norm(pair[0]) + '|' + norm(pair[1])));
+// Every answer a player has given, as "title|film" -> known (true) or not
+// (false). REJECTED and KNOWN above are the early batches, answered in chat;
+// build/vetting.json holds everything since - the vetting page (build/vet.js)
+// and matches from a Spotify export - and is read in order, so a later answer
+// about the same song overrides an earlier one. A song can move from rejected
+// to known: Ek Din Teri Raahon was marked unknown from its title and then
+// turned up in the player's own liked songs.
+const VETTING = path.join(__dirname, 'vetting.json');
+const ADDITIONS = path.join(__dirname, 'additions.json');
+const QUEUE = path.join(__dirname, '.vet-queue.json');   // gitignored, rewritten every run
+let verdicts = null;
+function verdictFor(s) {
+  if (!verdicts) {
+    verdicts = new Map();
+    REJECTED.forEach(p => verdicts.set(norm(p[0]) + '|' + norm(p[1]), false));
+    KNOWN.forEach(p => verdicts.set(norm(p[0]) + '|' + norm(p[1]), true));
+    if (fs.existsSync(VETTING)) {
+      JSON.parse(fs.readFileSync(VETTING, 'utf8'))
+        .forEach(a => verdicts.set(norm(a.title) + '|' + norm(a.movie), !!a.known));
+    }
   }
-  return rejectedKeys.has(s.nTitle + '|' + s.nMovie);
+  return verdicts.get(s.nTitle + '|' + s.nMovie);
 }
-
-const knownKeys = new Set();
-function isKnown(s) {
-  if (!knownKeys.size) KNOWN.forEach(pair => knownKeys.add(norm(pair[0]) + '|' + norm(pair[1])));
-  return knownKeys.has(s.nTitle + '|' + s.nMovie);
-}
+const isRejected = s => verdictFor(s) === false;
+const isKnown = s => verdictFor(s) === true;
 
 function select(candidates, signals) {
   // Rejected songs stay in the ranking. When one comes up in a pass it spends
-  // its film's slot and ships nothing; the ERA quota does not count it, so the
-  // era refills with the next song down instead of the catalog shrinking.
+  // its film's slot AND its era's slot, and ships nothing - so the catalog
+  // shrinks rather than refilling. It used to refill with the next song down,
+  // and those refills were never vetted and measured badly every time: Purza,
+  // a refill, was rejected in the very next batch. KNOWN songs are guaranteed a
+  // place further down, so shrinking can never cost a song the player vetted.
   //
   // The film slot is spent because otherwise the refill came from the SAME
   // film: rejecting Ram Siya Ram promoted Tu Hai Sheetal Dhaara - more of a film
@@ -1390,7 +1510,7 @@ function select(candidates, signals) {
       if (isTrial(s)) continue;   // added on top, below
       const f = perFilm.get(s.nMovie) || 0;
       if (f >= CONFIG.songsPerFilm) continue;
-      if (isRejected(s)) { perFilm.set(s.nMovie, f + 1); handled.add(s); continue; }
+      if (isRejected(s)) { perFilm.set(s.nMovie, f + 1); handled.add(s); taken++; continue; }
       const c = perComposer.get(s.composer) || 0;
       if (c >= CONFIG.songsPerComposer) continue;
       perFilm.set(s.nMovie, f + 1);
@@ -1406,6 +1526,19 @@ function select(candidates, signals) {
   }
 
   const eraOf = s => ERAS.find(e => e.quota > 0 && s.year >= e.from && s.year <= e.to);
+
+  // A song the player has named always ships, whatever the ranking now says.
+  // Rejections spend era slots, so the quota reaches less far down than when
+  // a song was vetted, and a known song near the old cutoff could otherwise
+  // fall out. Over the film cap if need be: the player's answer outranks it.
+  for (const s of scored) {
+    if (handled.has(s) || isTrial(s) || !isKnown(s) || isRejected(s)) continue;
+    const era = eraOf(s);
+    if (!era) continue;
+    perFilm.set(s.nMovie, (perFilm.get(s.nMovie) || 0) + 1);
+    s.era = era.name; s.addedBy = 'known';
+    chosen.push(s); handled.add(s);
+  }
 
   // The two passes below add songs ON TOP of the quotas, and neither may ship
   // a song the player has not vetted. The first batch they produced shipped
@@ -1441,7 +1574,8 @@ function select(candidates, signals) {
   // theory was that a known song means they saw the film, so its other songs
   // are safe. Measured, it is not: 30 of 107 (28%), no better than the trial
   // composers. Kept as a source of pending songs, gated like everything else.
-  const knownFilms = new Set(KNOWN.map(p => norm(p[1])));
+  verdictFor({});   // builds the map
+  const knownFilms = new Set([...verdicts].filter(([, known]) => known).map(([k]) => k.split('|')[1]));
   for (const s of scored) {
     if (!knownFilms.has(s.nMovie) || handled.has(s) || !eraOf(s)) continue;
     const f = perFilm.get(s.nMovie) || 0;
@@ -1520,6 +1654,21 @@ function write(seeds, harvested) {
   const seeds = seedCatalog(fs.readFileSync(TEMPLATE, 'utf8')).filter(s => s.trackId);
   const seen = new Set(seeds.map(s => s.nTitle + '|' + s.nMovie));
   const seenIds = new Set(seeds.map(s => s.trackId));
+
+  // Songs the player vouched for that no harvest path reaches - film songs from
+  // their own Spotify library, resolved to an Apple trackId by build/spotify.js.
+  // Always shipped, like seeds, since the vouching IS the vetting.
+  const additions = [];
+  if (fs.existsSync(ADDITIONS)) {
+    for (const a of JSON.parse(fs.readFileSync(ADDITIONS, 'utf8'))) {
+      const s = Object.assign({}, a, { nTitle: norm(a.title), nMovie: norm(a.movie) });
+      const key = s.nTitle + '|' + s.nMovie;
+      if (seen.has(key) || seenIds.has(s.trackId)) continue;
+      seen.add(key); seenIds.add(s.trackId);
+      additions.push(s);
+    }
+  }
+
   const kept = [];
   for (const s of chosen) {
     const key = s.nTitle + '|' + s.nMovie;
@@ -1540,6 +1689,17 @@ function write(seeds, harvested) {
     })), null, 1));
   }
 
+  // What build/vet.js asks about: every pending song, then every shipped song
+  // nobody has answered for yet. Seeds and additions are vouched for already.
+  // Written on every run, so the page always reflects the latest selection.
+  const queue = chosen.pending.map(s => ({ kind: 'pending', s }))
+    .concat(kept.filter(s => verdictFor(s) === undefined).map(s => ({ kind: 'shipped', s })))
+    .map(({ kind, s }) => ({ kind, title: s.title, artist: s.artist, movie: s.movie, trackId: s.trackId }));
+  fs.writeFileSync(QUEUE, JSON.stringify(queue, null, 1));
+  console.log('  ' + queue.length + ' songs in the vetting queue (' +
+              queue.filter(q => q.kind === 'pending').length + ' pending, ' +
+              queue.filter(q => q.kind === 'shipped').length + ' shipped but never asked about)');
+
   if (DUMP) {
     fs.writeFileSync(DUMP, JSON.stringify(chosen.map(s => ({
       title: s.title, movie: s.movie, trackId: s.trackId, score: s.score,
@@ -1549,7 +1709,7 @@ function write(seeds, harvested) {
     console.log('  dumped ' + chosen.length + ' scored songs to ' + DUMP);
   }
 
-  const merged = seeds.concat(kept);
+  const merged = seeds.concat(additions, kept);
 
   console.log('\n  ' + merged.length + ' songs (' + seeds.length + ' seeds + ' +
               kept.length + ' harvested)');
@@ -1603,8 +1763,8 @@ function write(seeds, harvested) {
               (dupeKeys.length ? ': ' + dupeKeys.slice(0, 8).join(', ') : ''));
 
   if (DRY) { console.log('\n  --dry, nothing written\n'); return; }
-  write(seeds, kept);
-  console.log('\n  wrote ' + seeds.length + ' seeds + ' + kept.length +
+  write(seeds, additions.concat(kept));
+  console.log('\n  wrote ' + seeds.length + ' seeds + ' + additions.length + ' additions + ' + kept.length +
               ' harvested songs to src/template.html\n');
 })().catch(e => {
   console.error(e);
